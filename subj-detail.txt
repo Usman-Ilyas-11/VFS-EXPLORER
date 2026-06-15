@@ -1,0 +1,35 @@
+sub-1: Data Structures
+       1)array
+       2)linklist
+       3)tree
+       4)sack
+       5)queue
+       7)heap
+       9)BST
+       10)AVL
+
+sub-2: Calculus
+       1) Derivative
+       2) Integration
+       3) Analytical Gometry
+
+sub-3: Data Communication and networks
+       1)Networks
+       2)Protocols
+
+sub-4: Computer Organization and Assembly Language
+       1)DLD
+       2)assembly language syntax
+
+sub-5: Software Engineering Fundamentals
+
+       1)Models
+       2)Activity Diagram
+       3)DFD diagram
+       3)data trees and graphs
+
+sub-6: Tarjuma quran
+       translation of some surah's of quran-e-majeed.
+Usman Ilyas wq
+
+wq

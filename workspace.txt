@@ -1,0 +1,3206 @@
+0 D 0 ROOT
+1 D 0 Uni
+2 D 0 sem-3
+3 F 0 subj-detail.txt
+CONTENT sub-1: Data Structures
+CONTENT        1)array
+CONTENT        2)linklist
+CONTENT        3)tree
+CONTENT        4)sack
+CONTENT        5)queue
+CONTENT        7)heap
+CONTENT        9)BST
+CONTENT        10)AVL
+CONTENT 
+CONTENT sub-2: Calculus
+CONTENT        1) Derivative
+CONTENT        2) Integration
+CONTENT        3) Analytical Gometry
+CONTENT 
+CONTENT sub-3: Data Communication and networks
+CONTENT        1)Networks
+CONTENT        2)Protocols
+CONTENT 
+CONTENT sub-4: Computer Organization and Assembly Language
+CONTENT        1)DLD
+CONTENT        2)assembly language syntax
+CONTENT 
+CONTENT sub-5: Software Engineering Fundamentals
+CONTENT 
+CONTENT        1)Models
+CONTENT        2)Activity Diagram
+CONTENT        3)DFD diagram
+CONTENT        3)data trees and graphs
+CONTENT 
+CONTENT sub-6: Tarjuma quran
+CONTENT        translation of some surah's of quran-e-majeed.
+CONTENT Usman Ilyas wq
+CONTENT 
+CONTENT wq
+2 F 0 sub1
+1 D 1 Exp-Trees
+2 F 0 infix.txt
+CONTENT ( ( a + b ) * ( c - d ) + ( e / f ) ^ g ) - ( h * ( i + j / k ) - l )
+2 F 0 prefix.txt
+CONTENT * + a b - c d
+2 F 0 postfix.txt
+CONTENT a b c * + d e - /
+1 D 0 GP_members
+2 D 0 detail_view
+3 F 0 source_code.txt
+CONTENT // --------------------------------------------mini_explorer_ui.cpp--------------------------------------------
+CONTENT #include <windows.h>
+CONTENT #include <iomanip>
+CONTENT #include <iostream>
+CONTENT #include <vector>
+CONTENT #include <string>
+CONTENT #include <stack>
+CONTENT #include <algorithm>
+CONTENT #include <sstream>
+CONTENT #include <fstream>   
+CONTENT #include <cstdlib>   
+CONTENT #include <conio.h>
+CONTENT #include <functional>
+CONTENT 
+CONTENT #define CLR_RESET  "\033[0m"
+CONTENT #define CLR_ROOT   "\033[93m"   // Yellow
+CONTENT #define CLR_LEFT   "\033[94m"   // Blue
+CONTENT #define CLR_RIGHT  "\033[95m"   // Pink
+CONTENT #define CLR_LINE   "\033[90m"   // Gray connectors
+CONTENT 
+CONTENT using std::cout;
+CONTENT using std::cin;
+CONTENT using std::endl;
+CONTENT using std::string;
+CONTENT using std::vector;
+CONTENT using std::stack;
+CONTENT using std::stringstream;
+CONTENT 
+CONTENT // ---------------------------------------------------------------structure ---------------------------------------------------------------
+CONTENT //expression Node
+CONTENT struct ExpNode {
+CONTENT     string val;
+CONTENT     ExpNode* left;
+CONTENT     ExpNode* right;
+CONTENT 
+CONTENT     ExpNode(string v) : val(v), left(nullptr), right(nullptr) {}
+CONTENT };
+CONTENT 
+CONTENT //simple Node
+CONTENT struct Node {
+CONTENT     string name;
+CONTENT     string fileContent;
+CONTENT     bool isFolder;
+CONTENT     bool isLocked;      // already present
+CONTENT     bool isBookmarked;  // NEW: persistent bookmark flag
+CONTENT     vector<Node*> children;
+CONTENT     Node* parent;
+CONTENT 
+CONTENT     Node(const string& n = "", bool folder = true, Node* p = NULL) {
+CONTENT         name = n;
+CONTENT         isFolder = folder;
+CONTENT         parent = p;
+CONTENT         isLocked = false;
+CONTENT         isBookmarked = false; // initialize
+CONTENT     }
+CONTENT };
+CONTENT // action
+CONTENT struct Action {
+CONTENT     string type;
+CONTENT     Node* node;
+CONTENT     Node* parent;
+CONTENT     int index;
+CONTENT     string extra; // used for rename (old/new) or bookmark name etc.
+CONTENT     Action(const string &t = "", Node* n = nullptr, Node* p = nullptr, int i = -1, const string &e = "")
+CONTENT         : type(t), node(n), parent(p), index(i), extra(e) {}
+CONTENT };
+CONTENT 
+CONTENT 
+CONTENT // Trie for suggestions
+CONTENT struct TrieNode {
+CONTENT     char ch;
+CONTENT     vector<TrieNode*> children;
+CONTENT     bool isEnd;
+CONTENT     string word;
+CONTENT 
+CONTENT     TrieNode(char c = 0) : ch(c), isEnd(false), word("") {}
+CONTENT };
+CONTENT 
+CONTENT TrieNode* trieRoot = nullptr;
+CONTENT TrieNode* trieNewNode(char c) {
+CONTENT     return new TrieNode(c);
+CONTENT }
+CONTENT 
+CONTENT void trieInsert(const string& word) {
+CONTENT     if (!trieRoot) trieRoot = trieNewNode(0);
+CONTENT 
+CONTENT     TrieNode* cur = trieRoot;
+CONTENT     for (char c : word) {
+CONTENT         TrieNode* nxt = nullptr;
+CONTENT         for (auto child : cur->children) {
+CONTENT             if (child->ch == c) {
+CONTENT                 nxt = child;
+CONTENT                 break;
+CONTENT             }
+CONTENT         }
+CONTENT         if (!nxt) {
+CONTENT             nxt = trieNewNode(c);
+CONTENT             cur->children.push_back(nxt);
+CONTENT         }
+CONTENT         cur = nxt;
+CONTENT     }
+CONTENT     cur->isEnd = true;
+CONTENT     cur->word = word;
+CONTENT }
+CONTENT 
+CONTENT vector<string> trieSuggest(const string& prefix, int limit) {
+CONTENT     vector<string> results;
+CONTENT     if (!trieRoot || prefix.empty()) return results;
+CONTENT 
+CONTENT     TrieNode* cur = trieRoot;
+CONTENT     for (char c : prefix) {
+CONTENT         TrieNode* nxt = nullptr;
+CONTENT         for (auto child : cur->children) {
+CONTENT             if (child->ch == c) {
+CONTENT                 nxt = child;
+CONTENT                 break;
+CONTENT             }
+CONTENT         }
+CONTENT         if (!nxt) return results;
+CONTENT         cur = nxt;
+CONTENT     }
+CONTENT 
+CONTENT     std::function<void(TrieNode*, string)> dfs = [&](TrieNode* node, string path) {
+CONTENT         if ((int)results.size() >= limit) return;
+CONTENT 
+CONTENT         if (node->isEnd)
+CONTENT             results.push_back(node->word);
+CONTENT 
+CONTENT         for (auto child : node->children)
+CONTENT             dfs(child, path + child->ch);
+CONTENT     };
+CONTENT 
+CONTENT     dfs(cur, prefix);
+CONTENT     return results;
+CONTENT }
+CONTENT 
+CONTENT // Bookmarks
+CONTENT struct Bookmark {
+CONTENT     string name;
+CONTENT     Node* node;
+CONTENT     Bookmark* next;
+CONTENT     Bookmark(const string& n, Node* nd) : name(n), node(nd), next(NULL) {}
+CONTENT };
+CONTENT 
+CONTENT // ------------------------------------------------------------------ Globals -----------------------------------------------------------
+CONTENT 
+CONTENT Node* ROOT = new Node("ROOT", true, NULL);
+CONTENT Node* currentNode = ROOT;
+CONTENT 
+CONTENT vector<string> commandHistory;
+CONTENT 
+CONTENT Bookmark* bookmarksHead = NULL;
+CONTENT stack<Node*> backStack;
+CONTENT stack<Node*> forwardStack;
+CONTENT stack<Action> undoStack;
+CONTENT stack<Action> redoStack;
+CONTENT 
+CONTENT vector<string> treeLines;
+CONTENT 
+CONTENT string inputBuffer = "";
+CONTENT 
+CONTENT 
+CONTENT //----------------------------------------------------------For Centring text---------------------------------------------------
+CONTENT 
+CONTENT //Center Alignment
+CONTENT void center(const string& text) {
+CONTENT     CONSOLE_SCREEN_BUFFER_INFO csbi;
+CONTENT     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+CONTENT 
+CONTENT     int width = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+CONTENT     int realLength = 0;
+CONTENT 
+CONTENT     bool ansi = false;
+CONTENT     for (char c : text) {
+CONTENT         if (c == '\033') ansi = true;
+CONTENT         else if (ansi && c == 'm') ansi = false;
+CONTENT         else if (!ansi) realLength++;
+CONTENT     }
+CONTENT 
+CONTENT     int pad = (width - realLength) / 2;
+CONTENT     if (pad < 0) pad = 0;
+CONTENT 
+CONTENT     cout << string(pad, ' ') << text << endl;
+CONTENT }
+CONTENT 
+CONTENT //left alignment
+CONTENT int getLeftPadding() {
+CONTENT     CONSOLE_SCREEN_BUFFER_INFO csbi;
+CONTENT     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+CONTENT 
+CONTENT     int screenWidth = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+CONTENT     int boxWidth = 50; // MUST match displayUIHeader
+CONTENT     return (screenWidth - boxWidth) / 2;
+CONTENT }
+CONTENT 
+CONTENT //NewLine Prompt
+CONTENT void showPromptNoNewline() {
+CONTENT     string prompt = "\033[96m📂 /" + currentNode->name + " > \033[0m";
+CONTENT     CONSOLE_SCREEN_BUFFER_INFO csbi;
+CONTENT     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+CONTENT     int width = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+CONTENT     int realLength = 0;
+CONTENT     bool ansi = false;
+CONTENT     for (char c : prompt) {
+CONTENT         if (c == '\033') ansi = true;
+CONTENT         else if (ansi && c == 'm') ansi = false;
+CONTENT         else if (!ansi) realLength++;
+CONTENT     }
+CONTENT     int pad = (width - realLength) / 2;
+CONTENT     if (pad < 0) pad = 0;
+CONTENT     cout << string(pad, ' ') << prompt;
+CONTENT }
+CONTENT 
+CONTENT //console width
+CONTENT 
+CONTENT int getConsoleWidth() {
+CONTENT     CONSOLE_SCREEN_BUFFER_INFO csbi;
+CONTENT     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+CONTENT     return csbi.srWindow.Right - csbi.srWindow.Left + 1;
+CONTENT }
+CONTENT void clearConsoleSim() {
+CONTENT system("cls");
+CONTENT }
+CONTENT //------------------------------------------------------ For prompt Entring----------------------------------------------------------------------
+CONTENT 
+CONTENT //cut command itno 2 parts
+CONTENT void parseCommandLine(const string& line, string& cmd, string& argRest) {
+CONTENT stringstream ss(line);
+CONTENT cmd = ""; argRest = "";
+CONTENT if (!(ss >> cmd)) return;
+CONTENT string rest; std::getline(ss, rest);
+CONTENT if (!rest.empty()) {
+CONTENT size_t pos = rest.find_first_not_of(" ");
+CONTENT if (pos != string::npos) rest = rest.substr(pos);
+CONTENT else rest = "";
+CONTENT }
+CONTENT argRest = rest;
+CONTENT }
+CONTENT string toLowerCopy(string s) {
+CONTENT     for (char &c : s) c = tolower(c);
+CONTENT     return s;
+CONTENT }
+CONTENT 
+CONTENT //display promptline
+CONTENT void showPrompt() {
+CONTENT     int padding = getLeftPadding();
+CONTENT     cout << string(padding, ' ')
+CONTENT          << "\033[96m📂 /" << currentNode->name << " > \033[0m";
+CONTENT }
+CONTENT 
+CONTENT //------------------------------------------------------ Header Box of The Project----------------------------------------------------------------------
+CONTENT 
+CONTENT // Main / UI 
+CONTENT void displayUIHeader() {
+CONTENT 	
+CONTENT     system("cls");
+CONTENT     CONSOLE_SCREEN_BUFFER_INFO csbi;
+CONTENT     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+CONTENT 
+CONTENT     int screenWidth = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+CONTENT     int boxWidth = 50; // approx width of UI boxes
+CONTENT     int padding = (screenWidth - boxWidth) / 2;
+CONTENT 
+CONTENT     auto center = [&](string text){
+CONTENT         cout << string(padding, ' ') << text;
+CONTENT     };
+CONTENT 
+CONTENT     cout << "\033[93m"; // Golden border color
+CONTENT 
+CONTENT     center("╔══════════════════════════════════════════════════╗\n");
+CONTENT     center("║ \033[97m          ⭐ MINI FILE EXPLORER ⭐               \033[93m║\n");
+CONTENT     center("╚══════════════════════════════════════════════════╝\n");
+CONTENT 
+CONTENT     // PATH BOX
+CONTENT     center("╔══════════════════════════════════════════════════╗\n");
+CONTENT     center("║ \033[97m📂 Path: /ROOT                                   \033[93m║\n");
+CONTENT     center("╚══════════════════════════════════════════════════╝\n");
+CONTENT 
+CONTENT     cout << "\033[0m"; // RESET COLOR
+CONTENT }
+CONTENT void displayUIfoter() {
+CONTENT 	system("cls");
+CONTENT     CONSOLE_SCREEN_BUFFER_INFO csbi;
+CONTENT     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+CONTENT 
+CONTENT     int screenWidth = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+CONTENT     int boxWidth = 50; // approx width of UI boxes
+CONTENT     int padding = (screenWidth - boxWidth) / 2;
+CONTENT 
+CONTENT     auto center = [&](string text){
+CONTENT         cout << string(padding, ' ') << text;
+CONTENT     };
+CONTENT 
+CONTENT     cout << "\033[93m"; // Golden border color
+CONTENT 
+CONTENT     center("╔══════════════════════════════════════════════════╗\n");
+CONTENT     center("║  \033[97m     👋 Goodbye! Your workspace was saved.      \033[93m║\n");
+CONTENT     center("╚══════════════════════════════════════════════════╝\n");
+CONTENT 
+CONTENT     // PATH BOX
+CONTENT     center("╔══════════════════════════════════════════════════╗\n");
+CONTENT     center("║ \033[97m            📅 Date: 31 Dec 2025                 \033[93m║\n");
+CONTENT     center("║ \033[97m            👩‍💻 Developed by: Group 1             \033[93m║\n");
+CONTENT     center("║ \033[97m               👥 Group Members:                 \033[93m║\n");
+CONTENT     center("║ \033[97m       1-Muhammad Usman Ilyas -> (1202)          \033[93m║\n");
+CONTENT     center("║ \033[97m       2-Zeenat               -> (1219)          \033[93m║\n");
+CONTENT     center("║ \033[97m       3-Nimra Farooq         -> (1208)          \033[93m║\n");
+CONTENT     center("║ \033[97m       4-Mursaleen Arshad     -> (1206)          \033[93m║\n");
+CONTENT     center("║ \033[97m            👨‍🏫 Presented To:Sir Naeem            \033[93m║\n");
+CONTENT 	center("║ \033[97m            📚 Data Structures Project           \033[93m║\n");
+CONTENT     center("╚══════════════════════════════════════════════════╝\n");
+CONTENT 
+CONTENT     cout << "\033[0m"; // RESET COLOR
+CONTENT }
+CONTENT 
+CONTENT //----------------------------------------------------------------uitilites-----------------------------------------------------------------
+CONTENT 
+CONTENT 
+CONTENT //------------------------------------->>>> For finding child nodes of folders
+CONTENT Node* findChild(Node* dir, const string& name) {
+CONTENT if (dir == NULL) return NULL;
+CONTENT for (size_t i = 0; i < dir->children.size(); ++i) {
+CONTENT if (dir->children[i]->name == name) return dir->children[i];
+CONTENT }
+CONTENT return NULL;
+CONTENT }
+CONTENT 
+CONTENT string joinPath(Node* node) {
+CONTENT vector<string> parts;
+CONTENT Node* cur = node;
+CONTENT while (cur != NULL) {
+CONTENT parts.insert(parts.begin(), cur->name);
+CONTENT cur = cur->parent;
+CONTENT }
+CONTENT string out = "/";
+CONTENT for (size_t i = 0; i < parts.size(); ++i) {
+CONTENT out += parts[i];
+CONTENT if (i + 1 < parts.size()) out += "/";
+CONTENT }
+CONTENT return out;
+CONTENT }
+CONTENT // find node by absolute path 
+CONTENT Node* findNodeByPath(const string& path) {
+CONTENT     if (path.empty()) return NULL;
+CONTENT     // path components split by '/'
+CONTENT     vector<string> parts;
+CONTENT     string cur;
+CONTENT     for (size_t i = 0; i < path.size(); ++i) {
+CONTENT         char c = path[i];
+CONTENT         if (c == '/') {
+CONTENT             if (!cur.empty()) { parts.push_back(cur); cur.clear(); }
+CONTENT         } else {
+CONTENT             cur.push_back(c);
+CONTENT         }
+CONTENT     }
+CONTENT     if (!cur.empty()) parts.push_back(cur);
+CONTENT 
+CONTENT     if (parts.empty()) return NULL;
+CONTENT     // first must match ROOT name
+CONTENT     if (parts[0] != ROOT->name) return NULL;
+CONTENT 
+CONTENT     Node* node = ROOT;
+CONTENT     for (size_t i = 1; i < parts.size(); ++i) {
+CONTENT         node = findChild(node, parts[i]);
+CONTENT         if (!node) return NULL;
+CONTENT     }
+CONTENT     return node;
+CONTENT }
+CONTENT 
+CONTENT 
+CONTENT // ------------------------------------------>>>> File helpers
+CONTENT //create Physical file
+CONTENT bool createPhysicalFile(const string &filename) {
+CONTENT     std::ofstream out(filename.c_str(), std::ios::app); // use append so we don't truncate unintentionally
+CONTENT     if (!out) return false;
+CONTENT     out.close();
+CONTENT     return true;
+CONTENT }
+CONTENT // Delete physical file
+CONTENT bool deletePhysicalFile(const string &filename) {
+CONTENT     if (std::remove(filename.c_str()) == 0) return true;
+CONTENT     return false;
+CONTENT }
+CONTENT // read physical file 
+CONTENT string readPhysicalFile(const string &filename) {
+CONTENT     std::ifstream in(filename.c_str());
+CONTENT     if (!in) return string();
+CONTENT     std::ostringstream ss;
+CONTENT     ss << in.rdbuf();
+CONTENT     return ss.str();
+CONTENT }
+CONTENT // write/append physical file 
+CONTENT bool appendToPhysicalFile(const string &filename, const string &content) {
+CONTENT     std::ofstream out(filename.c_str(), std::ios::app);
+CONTENT     if (!out) return false;
+CONTENT     out << content;
+CONTENT     out.close();
+CONTENT     return true;
+CONTENT }
+CONTENT 
+CONTENT //-------------------------------->>>> For generating expression tree (infix,postfix,prefix)
+CONTENT int prec(const string& op) {
+CONTENT     if (op=="+"||op=="-") return 1;
+CONTENT     if (op=="*"||op=="/") return 2;
+CONTENT     if (op=="^") return 3;
+CONTENT     return 0;
+CONTENT }
+CONTENT bool isOperator(const string& s) {
+CONTENT     return s=="+"||s=="-"||s=="*"||s=="/"||s=="^";
+CONTENT }
+CONTENT 
+CONTENT vector<string> tokenize(const string& expr) {
+CONTENT     stringstream ss(expr);
+CONTENT     vector<string> t;
+CONTENT     string x;
+CONTENT     while (ss >> x) t.push_back(x);
+CONTENT     return t;
+CONTENT }
+CONTENT //for centring tree
+CONTENT string stripANSI(const string& s) {
+CONTENT     string res;
+CONTENT     bool esc = false;
+CONTENT 
+CONTENT     for (size_t i = 0; i < s.size(); i++) {
+CONTENT         if (s[i] == '\033')
+CONTENT             esc = true;
+CONTENT         else if (esc && s[i] == 'm')
+CONTENT             esc = false;
+CONTENT         else if (!esc)
+CONTENT             res += s[i];
+CONTENT     }
+CONTENT     return res;
+CONTENT }
+CONTENT //postfix tree
+CONTENT ExpNode* buildPostfixTree(const string& expr) {
+CONTENT     stack<ExpNode*> st;
+CONTENT     for (auto& t : tokenize(expr)) {
+CONTENT         if (!isOperator(t))
+CONTENT             st.push(new ExpNode(t));
+CONTENT         else {
+CONTENT             auto r = st.top(); st.pop();
+CONTENT             auto l = st.top(); st.pop();
+CONTENT             auto n = new ExpNode(t);
+CONTENT             n->left = l;
+CONTENT             n->right = r;
+CONTENT             st.push(n);
+CONTENT         }
+CONTENT     }
+CONTENT     return st.empty() ? nullptr : st.top();
+CONTENT }
+CONTENT //prefixtree
+CONTENT ExpNode* buildPrefixTree(const string& expr) {
+CONTENT     auto tokens = tokenize(expr);
+CONTENT     stack<ExpNode*> st;
+CONTENT 
+CONTENT     for (int i = tokens.size() - 1; i >= 0; --i) {
+CONTENT         if (!isOperator(tokens[i]))
+CONTENT             st.push(new ExpNode(tokens[i]));
+CONTENT         else {
+CONTENT             auto l = st.top(); st.pop();
+CONTENT             auto r = st.top(); st.pop();
+CONTENT             auto n = new ExpNode(tokens[i]);
+CONTENT             n->left = l;
+CONTENT             n->right = r;
+CONTENT             st.push(n);
+CONTENT         }
+CONTENT     }
+CONTENT     return st.empty() ? nullptr : st.top();
+CONTENT }
+CONTENT //converting infix to postfix for infixtree
+CONTENT string infixToPostfix(const string& expr) {
+CONTENT     stack<string> st;
+CONTENT     string out;
+CONTENT 
+CONTENT     for (auto& t : tokenize(expr)) {
+CONTENT         if (!isOperator(t) && t!="(" && t!=")") out += t+" ";
+CONTENT         else if (t=="(") st.push(t);
+CONTENT         else if (t==")") {
+CONTENT             while (!st.empty() && st.top()!="(") {
+CONTENT                 out += st.top()+" "; st.pop();
+CONTENT             }
+CONTENT             st.pop();
+CONTENT         }
+CONTENT         else {
+CONTENT             while (!st.empty() && prec(st.top())>=prec(t)) {
+CONTENT                 out += st.top()+" "; st.pop();
+CONTENT             }
+CONTENT             st.push(t);
+CONTENT         }
+CONTENT     }
+CONTENT     while (!st.empty()) {
+CONTENT         out += st.top()+" "; st.pop();
+CONTENT     }
+CONTENT     return out;
+CONTENT }
+CONTENT //infixtree
+CONTENT ExpNode* buildInfixTree(const string& expr) {
+CONTENT     return buildPostfixTree(infixToPostfix(expr));
+CONTENT }
+CONTENT //create tree
+CONTENT void genTree(
+CONTENT     ExpNode* node,
+CONTENT     string prefix,
+CONTENT     bool isLast,
+CONTENT     bool isRoot,
+CONTENT     bool isLeft
+CONTENT ) {
+CONTENT     if (!node) return;
+CONTENT 
+CONTENT     string color =
+CONTENT         isRoot ? CLR_ROOT :
+CONTENT         isLeft ? CLR_LEFT :
+CONTENT                  CLR_RIGHT;
+CONTENT 
+CONTENT     string line = prefix;
+CONTENT 
+CONTENT     if (!isRoot) {
+CONTENT         line += string(CLR_LINE)
+CONTENT               + (isLast ? "└── " : "├── ")
+CONTENT               + CLR_RESET;
+CONTENT     }
+CONTENT 
+CONTENT     line += color + node->val + CLR_RESET;
+CONTENT     treeLines.push_back(line);
+CONTENT 
+CONTENT    string nextPrefix = prefix +
+CONTENT     (isLast
+CONTENT         ? "    "
+CONTENT         : string(CLR_LINE) + "│" + CLR_RESET + "   ");
+CONTENT 
+CONTENT 
+CONTENT     if (node->left)
+CONTENT         genTree(node->left, nextPrefix, false, false, true);
+CONTENT 
+CONTENT     if (node->right)
+CONTENT         genTree(node->right, nextPrefix, true, false, false);
+CONTENT }
+CONTENT 
+CONTENT //print created tree
+CONTENT void printExpressionTree(ExpNode* root, const string& title) {
+CONTENT     if (!root) return;
+CONTENT 
+CONTENT     treeLines.clear();
+CONTENT     genTree(root, "", true, true, false);
+CONTENT 
+CONTENT     int maxLen = 0;
+CONTENT     for (auto& l : treeLines)
+CONTENT         maxLen = std::max(maxLen, (int)stripANSI(l).length());
+CONTENT 
+CONTENT     int width = getConsoleWidth();
+CONTENT     int pad = std::max(0, (width - maxLen) / 2);
+CONTENT 
+CONTENT     cout << "\n";
+CONTENT     cout << string((width - title.length()) / 2, ' ')
+CONTENT          << CLR_ROOT << title << CLR_RESET << "\n\n";
+CONTENT 
+CONTENT     for (auto& l : treeLines)
+CONTENT         cout << string(pad, ' ') << l << "\n";
+CONTENT 
+CONTENT     cout << "\n";
+CONTENT }
+CONTENT //------------------------->>>>>for command suggesstion
+CONTENT void initCommandTrie() {
+CONTENT     vector<string> cmds = {
+CONTENT 
+CONTENT         // File & Folder
+CONTENT         "ls",
+CONTENT         "mkdir",
+CONTENT         "rm",
+CONTENT         "touch",
+CONTENT         "view",
+CONTENT         "edit",
+CONTENT         "rename",
+CONTENT         "cd",
+CONTENT         "tree",
+CONTENT 
+CONTENT         // Expression Trees
+CONTENT         "infixtree",
+CONTENT         "prefixtree",
+CONTENT         "postfixtree",
+CONTENT 
+CONTENT         // Undo / Redo
+CONTENT         "undo",
+CONTENT         "redo",
+CONTENT 
+CONTENT         // Search
+CONTENT         "search",
+CONTENT 
+CONTENT         // Bookmarks
+CONTENT         "bookmark",
+CONTENT 
+CONTENT         // History
+CONTENT         "history",
+CONTENT         "clearhistory",
+CONTENT 
+CONTENT         // Security
+CONTENT         "lock",
+CONTENT         "unlock",
+CONTENT 
+CONTENT         // UI / System
+CONTENT         "clear",
+CONTENT         "exit"
+CONTENT         
+CONTENT     };
+CONTENT 
+CONTENT     for (auto &cmd : cmds)
+CONTENT         trieInsert(cmd);
+CONTENT }
+CONTENT 
+CONTENT 
+CONTENT // --------------------------->>>>>>>> For LOCK system
+CONTENT //lock item
+CONTENT void lockItem(Node* currentFolder, const string& name) {
+CONTENT 
+CONTENT     Node* item = findChild(currentFolder, name);
+CONTENT 
+CONTENT     if (!item) {
+CONTENT         cout << "\033[91m"; // Red
+CONTENT         center("❌ Item not found.\n");
+CONTENT         cout << "\033[0m";
+CONTENT         return;
+CONTENT     }
+CONTENT 
+CONTENT     if (item->isLocked) {
+CONTENT         center("🔐 Item is already locked.\n");
+CONTENT         return;
+CONTENT     }
+CONTENT 
+CONTENT     item->isLocked = true;
+CONTENT 
+CONTENT     cout << "\033[92m"; // Green
+CONTENT     center("🔒 Item locked successfully!\n");
+CONTENT     cout << "\033[0m";
+CONTENT }
+CONTENT 
+CONTENT 
+CONTENT //  UNLOCK ITEM 
+CONTENT void unlockItem(Node* currentFolder, const string& name) {
+CONTENT 
+CONTENT     Node* item = findChild(currentFolder, name);
+CONTENT 
+CONTENT     if (!item) {
+CONTENT         cout << "\033[91m"; // Red
+CONTENT         center("❌ Item not found.\n");
+CONTENT         cout << "\033[0m";
+CONTENT         return;
+CONTENT     }
+CONTENT 
+CONTENT     if (!item->isLocked) {
+CONTENT         center("🔓 Item is already unlocked.\n");
+CONTENT         return;
+CONTENT     }
+CONTENT 
+CONTENT     item->isLocked = false;
+CONTENT 
+CONTENT     cout << "\033[92m"; // Green
+CONTENT     center("🔓 Item unlocked successfully!\n");
+CONTENT     cout << "\033[0m";
+CONTENT }
+CONTENT 
+CONTENT // ----------------->>>>>>>>>> complete Bookmarks functions
+CONTENT 
+CONTENT //list
+CONTENT void bookmark_list() {
+CONTENT     int padding = getLeftPadding();
+CONTENT     Bookmark* b = bookmarksHead;
+CONTENT 
+CONTENT     cout << string(padding, ' ') << "🔖 Saved Bookmarks:\n";
+CONTENT 
+CONTENT     if (!b) {
+CONTENT         cout << string(padding, ' ') << "\033[91m(none)\033[0m\n"; // red if none
+CONTENT         return;
+CONTENT     }
+CONTENT 
+CONTENT     while (b) {
+CONTENT         cout << string(padding, ' ') << "📌 "
+CONTENT              << b->name << "  ->  " << joinPath(b->node) << endl;
+CONTENT         b = b->next;
+CONTENT     }
+CONTENT }
+CONTENT //jump to bookmark
+CONTENT void bookmark_go(const string& name) {
+CONTENT     Bookmark* b = bookmarksHead;
+CONTENT     while (b) {
+CONTENT         if (b->name == name) {
+CONTENT             if (!b->node->isFolder) {
+CONTENT                 center("📄 Opening bookmarked file...");
+CONTENT                 center("📝 Content:");
+CONTENT                 center(readPhysicalFile(b->node->name)); // note: file stored with node->name (simple approach)
+CONTENT             } else {
+CONTENT                 currentNode = b->node;
+CONTENT                 center("📂 Jumped to Folder: " + name);
+CONTENT             }
+CONTENT             return;
+CONTENT         }
+CONTENT         b = b->next;
+CONTENT     }
+CONTENT     cout << "\033[31m"; center("❌ Bookmark Not Found!"); cout << "\033[0m";
+CONTENT }
+CONTENT 
+CONTENT //add new bookmark
+CONTENT void bookmark_add(const string& name) {
+CONTENT     if (name.empty()) { center("ℹ Usage: bookmark add <name>"); return; }
+CONTENT     if (name == ".") {
+CONTENT         Bookmark* b = new Bookmark(currentNode->name, currentNode);
+CONTENT         b->next = bookmarksHead; bookmarksHead = b;
+CONTENT         currentNode->isBookmarked = true;
+CONTENT         // push undo action
+CONTENT         undoStack.push(Action("bookmark_add", nullptr, nullptr, -1, currentNode->name));
+CONTENT         while (!redoStack.empty()) redoStack.pop();
+CONTENT         center("🔖 Bookmark Added: " + currentNode->name);
+CONTENT         return;
+CONTENT     }
+CONTENT     Node* target = findChild(currentNode, name);
+CONTENT     if (!target) { cout << "\033[31m"; center("❌ Item Not Found!"); cout << "\033[0m"; return; }
+CONTENT     Bookmark* b = new Bookmark(name, target);
+CONTENT     b->next = bookmarksHead; bookmarksHead = b;
+CONTENT     target->isBookmarked = true;
+CONTENT     // push undo action (bookmark_add)
+CONTENT     undoStack.push(Action("bookmark_add", nullptr, nullptr, -1, name));
+CONTENT     while (!redoStack.empty()) redoStack.pop();
+CONTENT     center("🔖 Bookmark Added: " + name);
+CONTENT }
+CONTENT 
+CONTENT //delete bookmark
+CONTENT void bookmark_remove(const string& name) {
+CONTENT     Bookmark* b = bookmarksHead; Bookmark* prev = NULL;
+CONTENT     while (b) {
+CONTENT         if (b->name == name) {
+CONTENT             if (b->node) b->node->isBookmarked = false;
+CONTENT             if (prev) prev->next = b->next; else bookmarksHead = b->next;
+CONTENT             // push redo/undo action: store removal as bookmark_remove with extra = name
+CONTENT             undoStack.push(Action("bookmark_remove", nullptr, nullptr, -1, name));
+CONTENT             while (!redoStack.empty()) redoStack.pop();
+CONTENT             delete b;
+CONTENT             center("🗑 Bookmark Removed: " + name);
+CONTENT             return;
+CONTENT         }
+CONTENT         prev = b; b = b->next;
+CONTENT     }
+CONTENT     cout << "\033[31m"; center("❌ Bookmark Not Found!"); cout << "\033[0m";
+CONTENT }
+CONTENT 
+CONTENT 
+CONTENT // ------------------------------>>>>>>>>>>>>>> complete search functionality
+CONTENT void searchDFS(Node* node, const string& keyword, vector<string>& results, const string& path="") {
+CONTENT if (!node) return;
+CONTENT string currentPath = path + "/" + node->name;
+CONTENT if (node->name.find(keyword) != string::npos) results.push_back(currentPath);
+CONTENT for (size_t i = 0; i < node->children.size(); ++i) {
+CONTENT searchDFS(node->children[i], keyword, results, currentPath);
+CONTENT }
+CONTENT }
+CONTENT 
+CONTENT void searchBFS(Node* start, const string& keyword, vector<string>& results) {
+CONTENT if (!start) return;
+CONTENT vector<Node*> queue;
+CONTENT vector<string> paths;
+CONTENT queue.push_back(start);
+CONTENT paths.push_back("/" + start->name);
+CONTENT 
+CONTENT 
+CONTENT for (size_t i = 0; i < queue.size(); ++i) {
+CONTENT     Node* node = queue[i];
+CONTENT     string path = paths[i];
+CONTENT     if (node->name.find(keyword) != string::npos) results.push_back(path);
+CONTENT     for (size_t j = 0; j < node->children.size(); ++j) {
+CONTENT         queue.push_back(node->children[j]);
+CONTENT         paths.push_back(path + "/" + node->children[j]->name);
+CONTENT     }
+CONTENT   }
+CONTENT }
+CONTENT 
+CONTENT // ------------------------->>>>>>>>>>>>>>>>> Tree Printing of complete workspace
+CONTENT 
+CONTENT 
+CONTENT void generateTree(Node* node, string prefix, bool isLast) {
+CONTENT     if (!node) return;
+CONTENT 
+CONTENT     string icon;
+CONTENT     if (node->isLocked) icon = "🔒" + string(node->isFolder ? "📁 " : "📄 ");
+CONTENT     else icon = node->isFolder ? "📁 " : "📄 ";
+CONTENT 
+CONTENT     string current = prefix + (prefix == "" ? "" : (isLast ? "└── " : "├── ")) + icon + node->name;
+CONTENT     treeLines.push_back(current);
+CONTENT 
+CONTENT     string newPrefix = prefix + (isLast ? "    " : "│   ");
+CONTENT 
+CONTENT     for (size_t i = 0; i < node->children.size(); i++)
+CONTENT         generateTree(node->children[i], newPrefix, i == node->children.size() - 1);
+CONTENT }
+CONTENT 
+CONTENT 
+CONTENT 
+CONTENT // ------------------------------------------------------>>>>>>>>>>>>> cmd_Commands-----------------------------------------------------------
+CONTENT 
+CONTENT //-------------------------->>>>Expression tree commands
+CONTENT //postfixtree
+CONTENT void cmd_postfix_tree(const string& file) {
+CONTENT     std::ifstream in(file);
+CONTENT     if (!in) { center("❌ File not found\n"); return; }
+CONTENT     string expr; getline(in, expr);
+CONTENT     printExpressionTree(buildPostfixTree(expr),
+CONTENT         "🌳 POSTFIX EXPRESSION TREE 🌳");
+CONTENT }
+CONTENT 
+CONTENT //prefixtree
+CONTENT void cmd_prefix_tree(const string& file) {
+CONTENT     std::ifstream in(file);
+CONTENT     if (!in) { center("❌ File not found\n"); return; }
+CONTENT     string expr; getline(in, expr);
+CONTENT     printExpressionTree(buildPrefixTree(expr),
+CONTENT         "🌳 PREFIX EXPRESSION TREE 🌳");
+CONTENT }
+CONTENT 
+CONTENT //infixtree
+CONTENT void cmd_infix_tree(const string& file) {
+CONTENT     std::ifstream in(file);
+CONTENT     if (!in) { center("❌ File not found\n"); return; }
+CONTENT     string expr; getline(in, expr);
+CONTENT     printExpressionTree(buildInfixTree(expr),
+CONTENT         "🌳 INFIX EXPRESSION TREE 🌳");
+CONTENT }
+CONTENT 
+CONTENT 
+CONTENT //----------------------------->>>> create file commands
+CONTENT //create
+CONTENT void cmd_touch(const string& name) {
+CONTENT     if (name.empty()) { cout << "\033[91m"; center("❌ touch: missing file name"); cout << "\033[0m"; return; }
+CONTENT     // Must be exact filename with extension
+CONTENT     if (findChild(currentNode, name)) { cout << "\033[91m"; center("⚠️ File already exists"); cout << "\033[0m"; return; }
+CONTENT     Node* f = new Node(name, false, currentNode);
+CONTENT     // create physical file
+CONTENT     if (!createPhysicalFile(name)) {
+CONTENT         cout << "\033[91m"; center("❌ Failed to create file on disk"); cout << "\033[0m";
+CONTENT         delete f; return;
+CONTENT     }
+CONTENT     currentNode->children.push_back(f);
+CONTENT     // record undo action create
+CONTENT     int idx = (int)currentNode->children.size() - 1;
+CONTENT     undoStack.push(Action("create", f, currentNode, idx, ""));
+CONTENT     while (!redoStack.empty()) redoStack.pop();
+CONTENT     cout << "\033[92m"; center("📄 File created: " + name); cout << "\033[0m";
+CONTENT }
+CONTENT 
+CONTENT //view
+CONTENT void cmd_view(const string& name) {
+CONTENT     if (name.empty()) { cout << "\033[91m"; center("❌ view: missing filename"); cout << "\033[0m"; return; }
+CONTENT     Node* f = findChild(currentNode, name);
+CONTENT     if (!f || f->isFolder) { cout << "\033[91m"; center("❌ File not found: " + name); cout << "\033[0m"; return; }
+CONTENT     if (f->isLocked) { cout << "\033[91m"; center("🔒 Cannot view: File is LOCKED"); cout << "\033[0m"; return; }
+CONTENT     // read physical file
+CONTENT     string data = readPhysicalFile(name);
+CONTENT     cout << "\033[96m"; center("📄 File content: " + name); cout << "\033[0m";
+CONTENT     if (data.empty()) center("(empty)");
+CONTENT     else {
+CONTENT         std::istringstream ss(data);
+CONTENT         string line;
+CONTENT         while (std::getline(ss, line)) center(line);
+CONTENT     }
+CONTENT }
+CONTENT 
+CONTENT //edit
+CONTENT void cmd_edit(const string& name) {
+CONTENT     if (name.empty()) { cout << "\033[91m"; center("❌ edit: missing filename"); cout << "\033[0m"; return; }
+CONTENT     Node* f = findChild(currentNode, name);
+CONTENT     if (!f || f->isFolder) { cout << "\033[91m"; center("❌ File not found"); cout << "\033[0m"; return; }
+CONTENT     if (f->isLocked) { cout << "\033[91m"; center("🔒 Cannot edit: File is LOCKED"); cout << "\033[0m"; return; }
+CONTENT     cout << "\033[93m"; center("✏ Enter text (':wq' save, ':q' cancel):"); cout << "\033[0m";
+CONTENT     string line, newContent;
+CONTENT     // Use getline to read lines
+CONTENT     while (true) {
+CONTENT         if (!std::getline(cin, line)) break;
+CONTENT         if (line == ":wq") break;
+CONTENT         if (line == ":q") { cout << "\033[91m"; center("🚫 Edit cancelled"); cout << "\033[0m"; return; }
+CONTENT         newContent += line + "\n";
+CONTENT     }
+CONTENT     if (!newContent.empty()) {
+CONTENT         if (!appendToPhysicalFile(name, newContent)) { cout << "\033[91m"; center("❌ Failed to write to disk"); cout << "\033[0m"; return; }
+CONTENT         f->fileContent += newContent; // keep in-memory content 
+CONTENT     }
+CONTENT     cout << "\033[92m"; center("💾 Saved"); cout << "\033[0m";
+CONTENT }
+CONTENT //----------------------------->>>>>>>>>   folder commanDs
+CONTENT //list
+CONTENT void cmd_ls() {
+CONTENT     cout << "\033[96m";
+CONTENT     center("📂 Contents");
+CONTENT     cout << "\033[0m";
+CONTENT 
+CONTENT     if (currentNode->children.empty()) {
+CONTENT         center("(empty)");
+CONTENT         return;
+CONTENT     }
+CONTENT 
+CONTENT     for (size_t i = 0; i < currentNode->children.size(); ++i) {
+CONTENT         Node* c = currentNode->children[i];
+CONTENT         string icon = c->isFolder ? "📁 " : "📄 ";
+CONTENT         center(icon + c->name);
+CONTENT     }
+CONTENT }
+CONTENT 
+CONTENT //create folder
+CONTENT void cmd_mkdir(const string& name) {
+CONTENT     if (name.empty()) { center("❌ mkdir: missing name"); return; }
+CONTENT     if (findChild(currentNode, name)) { center("⚠ Folder already exists."); return; }
+CONTENT     Node* n = new Node(name, true, currentNode);
+CONTENT     currentNode->children.push_back(n);
+CONTENT     int idx = (int)currentNode->children.size() - 1;
+CONTENT     undoStack.push(Action("create", n, currentNode, idx, ""));
+CONTENT     while (!redoStack.empty()) redoStack.pop();
+CONTENT     center("📁 Folder created: " + name);
+CONTENT }
+CONTENT 
+CONTENT //delete folder/file
+CONTENT void cmd_rm(const string& name) {
+CONTENT     if (name.empty()) { center("❌ rm: missing name"); return; }
+CONTENT     Node* target = findChild(currentNode, name);
+CONTENT     if (!target) { cout << "\033[91m"; center("❌ Item not found: " + name); cout << "\033[0m"; return; }
+CONTENT     if (target->isLocked) { cout << "\033[91m"; center("🔒 Cannot delete: Item is LOCKED."); cout << "\033[0m"; return; }
+CONTENT     auto &children = currentNode->children;
+CONTENT     auto it = std::find(children.begin(), children.end(), target);
+CONTENT     int idx = (it == children.end() ? -1 : (int)distance(children.begin(), it));
+CONTENT     if (idx == -1) { center("⚠ Internal error: cannot find child index."); return; }
+CONTENT     // push action BEFORE erasing so we can restore
+CONTENT     undoStack.push(Action("delete", target, currentNode, idx, ""));
+CONTENT     while (!redoStack.empty()) redoStack.pop();
+CONTENT     children.erase(it);
+CONTENT     // if file: delete physical file
+CONTENT     if (!target->isFolder) deletePhysicalFile(target->name);
+CONTENT     // also remove bookmarks that pointed to this node
+CONTENT     if (target->isBookmarked) {
+CONTENT         target->isBookmarked = false;
+CONTENT         Bookmark* b = bookmarksHead; Bookmark* prev = NULL;
+CONTENT         while (b) {
+CONTENT             if (b->node == target) {
+CONTENT                 if (prev) prev->next = b->next; else bookmarksHead = b->next;
+CONTENT                 delete b; break;
+CONTENT             }
+CONTENT             prev = b; b = b->next;
+CONTENT         }
+CONTENT     }
+CONTENT     center("🗑️ Deleted: " + name);
+CONTENT }
+CONTENT 
+CONTENT //rename folder /file
+CONTENT void cmd_rename(const string& rest) {
+CONTENT     size_t spacePos = rest.find(" ");
+CONTENT     if (spacePos == string::npos) {
+CONTENT         center("\033[91m❌ rename: missing arguments\033[0m");
+CONTENT         return;
+CONTENT     }
+CONTENT 
+CONTENT     string oldName = rest.substr(0, spacePos);
+CONTENT     string newName = rest.substr(spacePos + 1);
+CONTENT 
+CONTENT     Node* target = findChild(currentNode, oldName);
+CONTENT     if (!target) {
+CONTENT         center("\033[91m🚫 Item not found\033[0m");
+CONTENT         return;
+CONTENT     }
+CONTENT 
+CONTENT     if (target->isLocked) {
+CONTENT         center("\033[93m🔒 Cannot rename: Item is locked\033[0m");
+CONTENT         return;
+CONTENT     }
+CONTENT 
+CONTENT     if (findChild(currentNode, newName)) {
+CONTENT         center("\033[93m⚠️ Name already exists\033[0m");
+CONTENT         return;
+CONTENT     }
+CONTENT 
+CONTENT     target->name = newName;
+CONTENT     center("\033[92m✨ Renamed Successfully\033[0m");
+CONTENT }
+CONTENT 
+CONTENT // going into folder
+CONTENT void cmd_cd(const string& name) {
+CONTENT     if (name.empty()) { center("❌ cd: missing argument"); return; }
+CONTENT     if (name == "/") { currentNode = ROOT; center("📁 Now at ROOT"); return; }
+CONTENT     if (name == "..") { if (currentNode->parent) { currentNode = currentNode->parent; center("⬆️ Moved to parent folder"); } else center("⚠ Already at ROOT"); return; }
+CONTENT     Node* target = findChild(currentNode, name);
+CONTENT     if (!target || !target->isFolder) { center("❌ Folder not found: " + name); return; }
+CONTENT     if (target->isLocked) { center("🔒 Cannot enter: Folder is LOCKED."); return; }
+CONTENT     currentNode = target; center("📁 Entered: " + name);
+CONTENT }
+CONTENT 
+CONTENT //search any file folder
+CONTENT void cmd_search(const string& rest) {
+CONTENT     string keyword = rest;
+CONTENT     bool useDFS = true;
+CONTENT     size_t spacePos = rest.find(" ");
+CONTENT     if (spacePos != string::npos) {
+CONTENT         keyword = rest.substr(0, spacePos);
+CONTENT         string mode = rest.substr(spacePos + 1);
+CONTENT         if (mode == "bfs") useDFS = false;
+CONTENT     }
+CONTENT 
+CONTENT     vector<string> results;
+CONTENT     if (useDFS) searchDFS(ROOT, keyword, results);
+CONTENT     else searchBFS(ROOT, keyword, results);
+CONTENT 
+CONTENT     center("🔍 Search results for \"" + keyword + "\" (" + (useDFS ? "DFS" : "BFS") + ")");
+CONTENT 
+CONTENT     if (results.empty()) {
+CONTENT         center("(🚫 No matches)");
+CONTENT     } else {
+CONTENT         for (size_t i = 0; i < results.size(); ++i) {
+CONTENT             center(results[i]);
+CONTENT         }
+CONTENT     }
+CONTENT }
+CONTENT 
+CONTENT 
+CONTENT //--------------------------->>>>>>>>>tree for workspace
+CONTENT void cmd_tree() {
+CONTENT     treeLines.clear();
+CONTENT 
+CONTENT     generateTree(ROOT, "", true);
+CONTENT 
+CONTENT     int maxLen = 0;
+CONTENT     for (auto &line : treeLines)
+CONTENT         maxLen = std::max(maxLen, (int)line.length());
+CONTENT 
+CONTENT     int screenWidth = getConsoleWidth();
+CONTENT     int offset = std::max(0, (screenWidth - maxLen) / 2);
+CONTENT 
+CONTENT     cout << "\n";
+CONTENT     string title = "🌲 DIRECTORY TREE VIEW 🌲";
+CONTENT     cout << string((screenWidth - title.length()) / 2, ' ') << title << "\n\n";
+CONTENT 
+CONTENT     for (auto &line : treeLines) {
+CONTENT         cout << string(offset, ' ') << line << "\n";
+CONTENT     }
+CONTENT 
+CONTENT     cout << "\n";
+CONTENT }
+CONTENT 
+CONTENT // ----------------------------------->>>>>>>>>> history commands
+CONTENT void cmd_history() {
+CONTENT     int padding = getLeftPadding();
+CONTENT     
+CONTENT     if (commandHistory.empty()) {
+CONTENT         cout << string(padding, ' ') << "\033[91m(No history)\033[0m\n";
+CONTENT         return;
+CONTENT     }
+CONTENT 
+CONTENT     cout << string(padding, ' ') << "📜 Command History:\n";
+CONTENT     for (const auto &cmd : commandHistory) {
+CONTENT         cout << string(padding, ' ') << "➡️  " << cmd << endl;
+CONTENT     }
+CONTENT }
+CONTENT void clearCommandHistory() {
+CONTENT     commandHistory.clear();
+CONTENT     std::ofstream out("history.txt", std::ios::trunc);
+CONTENT     out.close();
+CONTENT     center("\033[92m🧹 Command History Cleared\033[0m");
+CONTENT }
+CONTENT 
+CONTENT //Undo
+CONTENT void cmd_undo() {
+CONTENT     if (undoStack.empty()) { center("⚠ Nothing to undo"); return; }
+CONTENT     Action a = undoStack.top(); undoStack.pop();
+CONTENT 
+CONTENT     if (a.type == "create") {
+CONTENT         if (a.parent) {
+CONTENT             auto &children = a.parent->children;
+CONTENT             auto it = std::find(children.begin(), children.end(), a.node);
+CONTENT             if (it != children.end()) children.erase(it);
+CONTENT             // if file, also delete physical
+CONTENT             if (a.node && !a.node->isFolder) deletePhysicalFile(a.node->name);
+CONTENT             redoStack.push(Action("create", a.node, a.parent, a.index, ""));
+CONTENT             center("↩️ Undo: removed created item");
+CONTENT         } else center("⚠ Undo error: parent missing");
+CONTENT     }
+CONTENT     else if (a.type == "delete") {
+CONTENT         if (a.parent) {
+CONTENT             auto &children = a.parent->children;
+CONTENT             int idx = a.index;
+CONTENT             if (idx < 0 || idx > (int)children.size()) idx = (int)children.size();
+CONTENT             children.insert(children.begin() + idx, a.node);
+CONTENT             a.node->parent = a.parent;
+CONTENT             // restore physical file for files: try to create an empty file; if we had content we can't reconstruct here
+CONTENT             if (!a.node->isFolder) createPhysicalFile(a.node->name);
+CONTENT             redoStack.push(Action("delete", a.node, a.parent, idx, ""));
+CONTENT             center("↩️ Undo: restored deleted item");
+CONTENT         } else center("⚠ Undo error: parent missing");
+CONTENT     }
+CONTENT     else if (a.type == "bookmark_add") {
+CONTENT         // undoing add => remove bookmark by name stored in extra
+CONTENT         string bname = a.extra;
+CONTENT         Bookmark* b = bookmarksHead; Bookmark* prev = NULL;
+CONTENT         while (b) {
+CONTENT             if (b->name == bname) {
+CONTENT                 if (b->node) b->node->isBookmarked = false;
+CONTENT                 if (prev) prev->next = b->next; else bookmarksHead = b->next;
+CONTENT                 delete b;
+CONTENT                 redoStack.push(Action("bookmark_add", nullptr, nullptr, -1, bname));
+CONTENT                 center("↩️ Undo: removed bookmark " + bname);
+CONTENT                 return;
+CONTENT             }
+CONTENT             prev = b; b = b->next;
+CONTENT         }
+CONTENT         center("⚠ Undo bookmark_add: not found");
+CONTENT     }
+CONTENT     else if (a.type == "bookmark_remove") {
+CONTENT     	
+CONTENT         string bname = a.extra;
+CONTENT         // Search for a node with that name
+CONTENT         std::function<Node*(Node*)> findByName = [&](Node* nd)->Node* {
+CONTENT             if (!nd) return nullptr;
+CONTENT             if (nd->name == bname) return nd;
+CONTENT             for (auto ch : nd->children) {
+CONTENT                 Node* r = findByName(ch);
+CONTENT                 if (r) return r;
+CONTENT             }
+CONTENT             return nullptr;
+CONTENT         };
+CONTENT         Node* target = findByName(ROOT);
+CONTENT         if (target) {
+CONTENT             Bookmark* nb = new Bookmark(bname, target);
+CONTENT             nb->next = bookmarksHead; bookmarksHead = nb;
+CONTENT             target->isBookmarked = true;
+CONTENT             redoStack.push(Action("bookmark_remove", nullptr, nullptr, -1, bname));
+CONTENT             center("↩️ Undo: restored bookmark " + bname);
+CONTENT         } else center("⚠ Undo bookmark_remove: original target not found");
+CONTENT     }
+CONTENT     else if (a.type == "rename") {
+CONTENT         string oldNew = a.extra;
+CONTENT         size_t sep = oldNew.find('|');
+CONTENT         string oldName = (sep==string::npos? oldNew : oldNew.substr(0, sep));
+CONTENT         string newName = (sep==string::npos? string() : oldNew.substr(sep+1));
+CONTENT         if (a.node) {
+CONTENT             a.node->name = oldName;
+CONTENT             redoStack.push(Action("rename", a.node, a.parent, a.index, oldName + "|" + newName));
+CONTENT             center("↩️ Undo: rename reverted to " + oldName);
+CONTENT         } else center("⚠ Undo rename: node missing");
+CONTENT     }
+CONTENT     else {
+CONTENT         center("⚠ Unsupported undo action");
+CONTENT     }
+CONTENT }
+CONTENT 
+CONTENT //redo
+CONTENT void cmd_redo() {
+CONTENT     if (redoStack.empty()) { center("⚠ Nothing to redo"); return; }
+CONTENT     Action a = redoStack.top(); redoStack.pop();
+CONTENT 
+CONTENT     if (a.type == "create") {
+CONTENT         if (a.parent) {
+CONTENT             auto &children = a.parent->children;
+CONTENT             int idx = a.index;
+CONTENT             if (idx < 0 || idx > (int)children.size()) idx = (int)children.size();
+CONTENT             children.insert(children.begin() + idx, a.node);
+CONTENT             a.node->parent = a.parent;
+CONTENT             // create physical file if file
+CONTENT             if (!a.node->isFolder) createPhysicalFile(a.node->name);
+CONTENT             undoStack.push(Action("create", a.node, a.parent, idx, ""));
+CONTENT             center("🔁 Redo: recreated item");
+CONTENT         } else center("⚠ Redo error: parent missing");
+CONTENT     }
+CONTENT     else if (a.type == "delete") {
+CONTENT         if (a.parent) {
+CONTENT             auto &children = a.parent->children;
+CONTENT             auto it = std::find(children.begin(), children.end(), a.node);
+CONTENT             if (it != children.end()) children.erase(it);
+CONTENT             // delete physical file if file
+CONTENT             if (!a.node->isFolder) deletePhysicalFile(a.node->name);
+CONTENT             undoStack.push(Action("delete", a.node, a.parent, a.index, ""));
+CONTENT             center("🔁 Redo: deleted item again");
+CONTENT         } else center("⚠ Redo error: parent missing");
+CONTENT     }
+CONTENT     else if (a.type == "bookmark_add") {
+CONTENT         string bname = a.extra;
+CONTENT         // re-add bookmark
+CONTENT         // try to find node by name
+CONTENT         std::function<Node*(Node*)> findByName = [&](Node* nd)->Node* {
+CONTENT             if (!nd) return nullptr;
+CONTENT             if (nd->name == bname) return nd;
+CONTENT             for (auto ch : nd->children) {
+CONTENT                 Node* r = findByName(ch);
+CONTENT                 if (r) return r;
+CONTENT             }
+CONTENT             return nullptr;
+CONTENT         };
+CONTENT         Node* target = findByName(ROOT);
+CONTENT         if (target) {
+CONTENT             Bookmark* nb = new Bookmark(bname, target);
+CONTENT             nb->next = bookmarksHead; bookmarksHead = nb;
+CONTENT             target->isBookmarked = true;
+CONTENT             undoStack.push(Action("bookmark_add", nullptr, nullptr, -1, bname));
+CONTENT             center("🔁 Redo: bookmark added " + bname);
+CONTENT         } else center("⚠ Redo bookmark_add: node not found");
+CONTENT     }
+CONTENT     else if (a.type == "bookmark_remove") {
+CONTENT         // redo the removal: remove bookmark by name
+CONTENT         string bname = a.extra;
+CONTENT         Bookmark* b = bookmarksHead; Bookmark* prev = NULL;
+CONTENT         while (b) {
+CONTENT             if (b->name == bname) {
+CONTENT                 if (b->node) b->node->isBookmarked = false;
+CONTENT                 if (prev) prev->next = b->next; else bookmarksHead = b->next;
+CONTENT                 delete b;
+CONTENT                 undoStack.push(Action("bookmark_remove", nullptr, nullptr, -1, bname));
+CONTENT                 center("🔁 Redo: bookmark removed " + bname);
+CONTENT                 return;
+CONTENT             }
+CONTENT             prev = b; b = b->next;
+CONTENT         }
+CONTENT         center("⚠ Redo bookmark_remove: not found");
+CONTENT     }
+CONTENT     else if (a.type == "rename") {
+CONTENT         // apply rename to newName
+CONTENT         string oldNew = a.extra;
+CONTENT         size_t sep = oldNew.find('|');
+CONTENT         string oldName = (sep==string::npos? oldNew : oldNew.substr(0, sep));
+CONTENT         string newName = (sep==string::npos? string() : oldNew.substr(sep+1));
+CONTENT         if (a.node) {
+CONTENT             a.node->name = newName;
+CONTENT             undoStack.push(Action("rename", a.node, a.parent, a.index, oldName + "|" + newName));
+CONTENT             center("🔁 Redo: renamed to " + newName);
+CONTENT         } else center("⚠ Redo rename: node missing");
+CONTENT     }
+CONTENT     else {
+CONTENT         center("⚠ Unsupported redo action");
+CONTENT     }
+CONTENT }
+CONTENT 
+CONTENT //-----------------------------------------------------------Complete File handling------------------------------------------------
+CONTENT 
+CONTENT // ------------------>>>>>>>>save and load history
+CONTENT void saveHistoryToFile() {
+CONTENT     std::ofstream out("history.txt", std::ios::trunc);
+CONTENT     for (size_t i = 0; i < commandHistory.size(); ++i) out << commandHistory[i] << "\n";
+CONTENT     out.close();
+CONTENT }
+CONTENT void loadHistoryFromFile() {
+CONTENT     commandHistory.clear();
+CONTENT     std::ifstream in("history.txt");
+CONTENT     if (!in) return;
+CONTENT     string line;
+CONTENT     while (std::getline(in, line)) {
+CONTENT         if (!line.empty()) commandHistory.push_back(line);
+CONTENT     }
+CONTENT     in.close();
+CONTENT }
+CONTENT 
+CONTENT // ------------------------------->>>>>save bookmarks
+CONTENT void saveBookmarks(std::ofstream &out) {
+CONTENT     out << "BOOKMARKS\n";
+CONTENT     Bookmark* b = bookmarksHead;
+CONTENT     while (b) {
+CONTENT         if (b->node) {
+CONTENT             out << "BOOKMARK " << b->name << " | " << joinPath(b->node) << "\n";
+CONTENT         }
+CONTENT         b = b->next;
+CONTENT     }
+CONTENT }
+CONTENT 
+CONTENT // ------------------------------>>>>>>>>>> save / load workspace 
+CONTENT void saveWorkspace(Node* node, std::ofstream &out, int depth = 0) {
+CONTENT     if (!node) return;
+CONTENT     out << depth << " " << (node->isFolder ? "D" : "F") << " " << (node->isLocked ? "1" : "0") << " " << node->name << "\n";
+CONTENT     if (!node->isFolder) {
+CONTENT         std::istringstream ss(node->fileContent);
+CONTENT         string line;
+CONTENT         while (std::getline(ss, line)) out << "CONTENT " << line << "\n";
+CONTENT     }
+CONTENT     for (Node* child : node->children) saveWorkspace(child, out, depth + 1);
+CONTENT }
+CONTENT 
+CONTENT //------------------------------>>>>>>>>> Load workspace + bookmarks
+CONTENT void loadWorkspace(Node* root, std::ifstream &in) {
+CONTENT     // clear current children & bookmarks
+CONTENT     root->children.clear();
+CONTENT     currentNode = root;
+CONTENT     while (bookmarksHead) { Bookmark* t = bookmarksHead; bookmarksHead = bookmarksHead->next; delete t; }
+CONTENT 
+CONTENT     vector<Node*> depthNodes;
+CONTENT     depthNodes.resize(1);
+CONTENT     depthNodes[0] = root;
+CONTENT 
+CONTENT     string line;
+CONTENT     Node* lastFileNode = NULL;
+CONTENT     bool inBookmarkSection = false;
+CONTENT     while (std::getline(in, line)) {
+CONTENT         if (line.empty()) continue;
+CONTENT         if (!inBookmarkSection && line == "BOOKMARKS") { inBookmarkSection = true; continue; }
+CONTENT         if (inBookmarkSection) {
+CONTENT             if (line.rfind("BOOKMARK ", 0) == 0) {
+CONTENT                 string rest = line.substr(9);
+CONTENT                 size_t sep = rest.find(" | ");
+CONTENT                 string bname, bpath;
+CONTENT                 if (sep != string::npos) { bname = rest.substr(0, sep); bpath = rest.substr(sep + 3); }
+CONTENT                 else {
+CONTENT                     size_t sp = rest.find(' ');
+CONTENT                     if (sp != string::npos) { bname = rest.substr(0, sp); bpath = rest.substr(sp + 1); }
+CONTENT                     else { bname = rest; bpath = ""; }
+CONTENT                 }
+CONTENT                 if (!bpath.empty()) {
+CONTENT                     Node* target = findNodeByPath(bpath);
+CONTENT                     if (target) { Bookmark* nb = new Bookmark(bname, target); nb->next = bookmarksHead; bookmarksHead = nb; target->isBookmarked = true; }
+CONTENT                 }
+CONTENT             }
+CONTENT             continue;
+CONTENT         }
+CONTENT         if (line.rfind("CONTENT ", 0) == 0) {
+CONTENT             if (lastFileNode) lastFileNode->fileContent += line.substr(8) + "\n";
+CONTENT             continue;
+CONTENT         }
+CONTENT         stringstream ss(line);
+CONTENT         int depth;
+CONTENT         char type;
+CONTENT         int lockState;
+CONTENT         if (!(ss >> depth >> type >> lockState)) continue;
+CONTENT         string name;
+CONTENT         getline(ss, name);
+CONTENT         if (!name.empty() && name[0] == ' ') name = name.substr(1);
+CONTENT         if (depth == 0) { root->name = name; root->isFolder = (type == 'D'); root->isLocked = (lockState == 1); lastFileNode = NULL; continue; }
+CONTENT         if ((int)depth >= (int)depthNodes.size()) depthNodes.resize(depth + 1, NULL);
+CONTENT         Node* parent = depthNodes[depth - 1];
+CONTENT         if (!parent) { lastFileNode = NULL; continue; }
+CONTENT         Node* newNode = new Node(name, (type == 'D'), parent);
+CONTENT         newNode->isLocked = (lockState == 1);
+CONTENT         parent->children.push_back(newNode);
+CONTENT         depthNodes[depth] = newNode;
+CONTENT         lastFileNode = (newNode->isFolder ? NULL : newNode);
+CONTENT     }
+CONTENT }
+CONTENT 
+CONTENT 
+CONTENT //-------------------------------------------------------->>>>>>>>>     Main part of Project      -------------------------------------------
+CONTENT int main() {
+CONTENT 	SetConsoleOutputCP(CP_UTF8); // Enable UTF-8
+CONTENT     system("chcp 65001 > nul");  // Backup command
+CONTENT     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+CONTENT     DWORD dwMode = 0;
+CONTENT     GetConsoleMode(hConsole, &dwMode);
+CONTENT     dwMode |= 0x0004; // ENABLE_VIRTUAL_TERMINAL_PROCESSING
+CONTENT     SetConsoleMode(hConsole, dwMode);
+CONTENT     CONSOLE_SCREEN_BUFFER_INFO csbi;
+CONTENT     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+CONTENT 
+CONTENT     int screenWidth = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+CONTENT     int boxWidth = 50;
+CONTENT     int padding = (screenWidth - boxWidth) / 2;
+CONTENT 
+CONTENT     auto center = [&](string text){
+CONTENT     cout << string(padding, ' ') << text;
+CONTENT };
+CONTENT 
+CONTENT     initCommandTrie();  // for suggestions
+CONTENT      
+CONTENT     // draw header
+CONTENT     displayUIHeader();
+CONTENT 
+CONTENT      // auto load workspace if exists
+CONTENT     std::ifstream in("workspace.txt");
+CONTENT      // load history
+CONTENT     loadHistoryFromFile();
+CONTENT     if (in) {
+CONTENT         loadWorkspace(ROOT, in);
+CONTENT         in.close();
+CONTENT         cout << "\033[93m";
+CONTENT         center("╔══════════════════════════════════════════════════╗\n");
+CONTENT         center("║ \033[97m📂 Auto-loaded workspace from workspace.txt      \033[93m║\n");
+CONTENT         center("╚══════════════════════════════════════════════════╝\n");
+CONTENT         cout << "\033[0m";
+CONTENT     }
+CONTENT 
+CONTENT     cout << "\033[92m";
+CONTENT     center("💡 Tip: Type \033[93mhelp\033[92m to view available commands\n");
+CONTENT     cout << "\033[0m";
+CONTENT 
+CONTENT 
+CONTENT     showPrompt();
+CONTENT     
+CONTENT     while (true) {
+CONTENT 
+CONTENT         char ch = _getch();
+CONTENT         
+CONTENT         // ENTER pressed
+CONTENT         if (ch == 13) {
+CONTENT             cout << endl;
+CONTENT             // Save to history if not empty
+CONTENT             if (!inputBuffer.empty()) {
+CONTENT                 commandHistory.push_back(inputBuffer);
+CONTENT                 saveHistoryToFile(); // persist immediately
+CONTENT             }
+CONTENT 
+CONTENT             // parse and dispatch
+CONTENT             string cmd, rest;
+CONTENT             parseCommandLine(inputBuffer, cmd, rest);
+CONTENT             inputBuffer.clear();
+CONTENT 
+CONTENT             if (cmd == "exit") {
+CONTENT                 std::ofstream out("workspace.txt");
+CONTENT                 if (out) {
+CONTENT                     saveWorkspace(ROOT, out, 0);
+CONTENT                     saveBookmarks(out);
+CONTENT                     out.close();
+CONTENT                 }
+CONTENT                 saveHistoryToFile();
+CONTENT                 cout << "\033[93m"; // GOLDEN
+CONTENT                 center("╔══════════════════════════════════════════════════╗\n");
+CONTENT                 center("║ \033[97m            📁 Auto-saved workspace              \033[93m║\n");
+CONTENT                 center("╚══════════════════════════════════════════════════╝\n");
+CONTENT                 cout << "\033[0m";
+CONTENT                 break;
+CONTENT             }
+CONTENT 
+CONTENT             else if (cmd == "help"){
+CONTENT             	cout << "\033[93m";
+CONTENT                 center("╔══════════════════════════════════════════════════╗\n");
+CONTENT                 center("║ \033[97m             📘 HELP MENU 📘                     \033[93m║\n");
+CONTENT                 center("╠══════════════════════════════════════════════════╣\n");
+CONTENT                 center("║ \033[97m📁 ls                       → list items         \033[93m║\n");
+CONTENT                 center("║ \033[97m📂 mkdir <name>             → create folder      \033[93m║\n");
+CONTENT                 center("║ \033[97m❌ rm <name>                → remove item        \033[93m║\n");
+CONTENT                 center("║ \033[97m📄 touch <file>             → create file        \033[93m║\n");
+CONTENT                 center("║ \033[97m👀 view <file>              → view file          \033[93m║\n");
+CONTENT                 center("║ \033[97m📝 edit <file>              → edit file          \033[93m║\n");
+CONTENT                 center("║ \033[97m✏ rename <old> <new>        → rename item        \033[93m║\n");
+CONTENT                 center("║ \033[97m🔁 cd <name|..>             → change folder      \033[93m║\n");
+CONTENT                 center("║ \033[97m🌳 tree                     → directory tree     \033[93m║\n");
+CONTENT                 center("║ \033[97m🌳 infixtree <file.txt>     → infixtree    \033[93m      ║\n");
+CONTENT                 center("║ \033[97m🌳 prefixtree <file.txt>    → prefixtree         \033[93m║\n");
+CONTENT                 center("║ \033[97m🌳 postfixtree <file.txt>   →  postfixtree       \033[93m║\n");
+CONTENT                 center("║ \033[97m↩ undo / redo               → undo redo          \033[93m║\n");
+CONTENT                 center("║ \033[97m🔍 search <k> [dfs|bfs]     → search item        \033[93m║\n");
+CONTENT                 center("║ \033[97m🔖 bookmark add <name>      → add bookmark       \033[93m║\n");
+CONTENT                 center("║ \033[97m📌 bookmark list            → list bookmarks     \033[93m║\n");
+CONTENT                 center("║ \033[97m🚀 bookmark go <name>       → go bookmark        \033[93m║\n");
+CONTENT                 center("║ \033[97m🗑 bookmark remove <name>    → del bookmark       \033[93m║\n");
+CONTENT                 center("║ \033[97m🕘 history                  → cmd history        \033[93m║\n");
+CONTENT                 center("║ \033[97m🧹 clearhistory             → clear history      \033[93m║\n");
+CONTENT                 center("║ \033[97m🔒 lock <item>              → lock file/folder   \033[93m║\n");
+CONTENT                 center("║ \033[97m🔓 unlock <item>            → unlock item        \033[93m║\n");
+CONTENT                 center("║ \033[97m🧼 clear                    → refresh UI         \033[93m║\n");
+CONTENT                 center("║ \033[97m❎ exit                     → quit explorer      \033[93m║\n");
+CONTENT                 center("╚══════════════════════════════════════════════════╝\n");
+CONTENT                 cout << "\033[0m";
+CONTENT 			}
+CONTENT             else if (cmd == "postfixtree") cmd_postfix_tree(rest);
+CONTENT             else if (cmd == "prefixtree")  cmd_prefix_tree(rest);
+CONTENT             else if (cmd == "infixtree")   cmd_infix_tree(rest);
+CONTENT             else if (cmd == "ls") cmd_ls();
+CONTENT             else if (cmd == "mkdir") cmd_mkdir(rest);
+CONTENT             else if (cmd == "rm") cmd_rm(rest);
+CONTENT             else if (cmd == "cd") cmd_cd(rest);
+CONTENT             else if (cmd == "tree") cmd_tree();
+CONTENT             else if (cmd == "undo") cmd_undo();
+CONTENT             else if (cmd == "redo") cmd_redo();
+CONTENT             else if (cmd == "rename") cmd_rename(rest);
+CONTENT             else if (cmd == "search") cmd_search(rest);
+CONTENT             else if (cmd == "touch") cmd_touch(rest);
+CONTENT             else if (cmd == "view") cmd_view(rest);
+CONTENT             else if (cmd == "edit") cmd_edit(rest);
+CONTENT             else if (cmd == "lock") {
+CONTENT                 if (rest.empty())
+CONTENT                    center("\033[93m⚠️ Usage: lock <name>\033[0m");
+CONTENT                 else
+CONTENT                    lockItem(currentNode, rest);
+CONTENT             }
+CONTENT             else if (cmd == "unlock") {
+CONTENT                 if (rest.empty())
+CONTENT                    center("\033[93m⚠️ Usage: unlock <name>\033[0m");
+CONTENT                 else
+CONTENT                    unlockItem(currentNode, rest);
+CONTENT             }
+CONTENT             else if (cmd == "bookmark") {
+CONTENT                 string sub, arg;
+CONTENT                 parseCommandLine(rest, sub, arg);
+CONTENT                 if (sub == "add") bookmark_add(arg);
+CONTENT                 else if (sub == "list") bookmark_list();
+CONTENT                 else if (sub == "go") bookmark_go(arg);
+CONTENT                 else if (sub == "remove") bookmark_remove(arg);
+CONTENT                 else center("❌ Unknown bookmark command: " + sub);
+CONTENT             }
+CONTENT             else if (cmd == "history") cmd_history();
+CONTENT             else if (cmd == "clearhistory") clearCommandHistory();
+CONTENT 
+CONTENT             else if (cmd == "clear") {
+CONTENT                 clearConsoleSim();
+CONTENT                 displayUIHeader();
+CONTENT                 
+CONTENT         cout << "\033[0m";
+CONTENT                 cout << "\033[92m";
+CONTENT                 center("      💡 Tip: Type \033[93mhelp\033[92m to view available commands\n");
+CONTENT                 cout << "\033[0m";
+CONTENT             } 
+CONTENT 			else {
+CONTENT                 center("         \033[91m❌ Unknown Command: " + cmd + "\033[0m\n");
+CONTENT             }
+CONTENT 
+CONTENT             // show prompt again
+CONTENT             showPrompt();
+CONTENT             continue;
+CONTENT        }
+CONTENT        
+CONTENT         // TAB Pressed - show suggestions only
+CONTENT         else if (ch == '\t') {
+CONTENT             vector<string> suggestions;
+CONTENT             string lowerBuf = toLowerCopy(inputBuffer);
+CONTENT             suggestions = trieSuggest(lowerBuf, 1);
+CONTENT             if (!suggestions.empty())
+CONTENT                 inputBuffer = suggestions[0];
+CONTENT         }
+CONTENT 
+CONTENT         // BACKSPACE
+CONTENT         else if (ch == 8) {
+CONTENT             if (!inputBuffer.empty())
+CONTENT                 inputBuffer.pop_back();
+CONTENT         }
+CONTENT 
+CONTENT         // Printable character
+CONTENT         else if (isprint(ch)) {
+CONTENT             inputBuffer.push_back(ch);
+CONTENT         }
+CONTENT 
+CONTENT         // Display input live without UI flicker
+CONTENT         // Clean input display logic
+CONTENT         // Live input display fix
+CONTENT         cout << "\r"; 
+CONTENT         showPrompt();
+CONTENT         cout << inputBuffer;
+CONTENT 
+CONTENT         // Remove leftover characters visually
+CONTENT         cout << "\033[J"; // Clear till end of line correctly (ANSI escape)
+CONTENT         cout.flush();
+CONTENT 
+CONTENT     }
+CONTENT displayUIfoter();
+CONTENT     return 0;
+CONTENT }
+CONTENT // --------------------------------------------mini_explorer_ui.cpp--------------------------------------------
+CONTENT #include <windows.h>
+CONTENT #include <iomanip>
+CONTENT #include <iostream>
+CONTENT #include <vector>
+CONTENT #include <string>
+CONTENT #include <stack>
+CONTENT #include <algorithm>
+CONTENT #include <sstream>
+CONTENT #include <fstream>   
+CONTENT #include <cstdlib>   
+CONTENT #include <conio.h>
+CONTENT #include <functional>
+CONTENT 
+CONTENT #define CLR_RESET  "\033[0m"
+CONTENT #define CLR_ROOT   "\033[93m"   // Yellow
+CONTENT #define CLR_LEFT   "\033[94m"   // Blue
+CONTENT #define CLR_RIGHT  "\033[95m"   // Pink
+CONTENT #define CLR_LINE   "\033[90m"   // Gray 
+CONTENT 
+CONTENT using std::cout;
+CONTENT using std::cin;
+CONTENT using std::endl;
+CONTENT using std::string;
+CONTENT using std::vector;
+CONTENT using std::stack;
+CONTENT using std::stringstream;
+CONTENT 
+CONTENT // ---------------------------------------------------------------structure ---------------------------------------------------------------
+CONTENT //expression Node
+CONTENT struct ExpNode {
+CONTENT     string val;
+CONTENT     ExpNode* left;
+CONTENT     ExpNode* right;
+CONTENT 
+CONTENT     ExpNode(string v) : val(v), left(nullptr), right(nullptr) {}
+CONTENT };
+CONTENT 
+CONTENT //simple Node
+CONTENT struct Node {
+CONTENT     string name;
+CONTENT     string fileContent;
+CONTENT     bool isFolder;
+CONTENT     bool isLocked;      
+CONTENT     bool isBookmarked;  
+CONTENT     vector<Node*> children;
+CONTENT     Node* parent;
+CONTENT 
+CONTENT     Node(const string& n = "", bool folder = true, Node* p = NULL) {
+CONTENT         name = n;
+CONTENT         isFolder = folder;
+CONTENT         parent = p;
+CONTENT         isLocked = false;
+CONTENT         isBookmarked = false;
+CONTENT     }
+CONTENT };
+CONTENT // action
+CONTENT struct Action {
+CONTENT     string type;
+CONTENT     Node* node;
+CONTENT     Node* parent;
+CONTENT     int index;
+CONTENT     string extra; 
+CONTENT     Action(const string &t = "", Node* n = nullptr, Node* p = nullptr, int i = -1, const string &e = "")
+CONTENT         : type(t), node(n), parent(p), index(i), extra(e) {}
+CONTENT };
+CONTENT 
+CONTENT 
+CONTENT // Trie for suggestions
+CONTENT struct TrieNode {
+CONTENT     char ch;
+CONTENT     vector<TrieNode*> children;
+CONTENT     bool isEnd;
+CONTENT     string word;
+CONTENT 
+CONTENT     TrieNode(char c = 0) : ch(c), isEnd(false), word("") {}
+CONTENT };
+CONTENT 
+CONTENT TrieNode* trieRoot = nullptr;
+CONTENT TrieNode* trieNewNode(char c) {
+CONTENT     return new TrieNode(c);
+CONTENT }
+CONTENT 
+CONTENT void trieInsert(const string& word) {
+CONTENT     if (!trieRoot) trieRoot = trieNewNode(0);
+CONTENT 
+CONTENT     TrieNode* cur = trieRoot;
+CONTENT     for (char c : word) {
+CONTENT         TrieNode* nxt = nullptr;
+CONTENT         for (auto child : cur->children) {
+CONTENT             if (child->ch == c) {
+CONTENT                 nxt = child;
+CONTENT                 break;
+CONTENT             }
+CONTENT         }
+CONTENT         if (!nxt) {
+CONTENT             nxt = trieNewNode(c);
+CONTENT             cur->children.push_back(nxt);
+CONTENT         }
+CONTENT         cur = nxt;
+CONTENT     }
+CONTENT     cur->isEnd = true;
+CONTENT     cur->word = word;
+CONTENT }
+CONTENT 
+CONTENT vector<string> trieSuggest(const string& prefix, int limit) {
+CONTENT     vector<string> results;
+CONTENT     if (!trieRoot || prefix.empty()) return results;
+CONTENT 
+CONTENT     TrieNode* cur = trieRoot;
+CONTENT     for (char c : prefix) {
+CONTENT         TrieNode* nxt = nullptr;
+CONTENT         for (auto child : cur->children) {
+CONTENT             if (child->ch == c) {
+CONTENT                 nxt = child;
+CONTENT                 break;
+CONTENT             }
+CONTENT         }
+CONTENT         if (!nxt) return results;
+CONTENT         cur = nxt;
+CONTENT     }
+CONTENT 
+CONTENT     std::function<void(TrieNode*, string)> dfs = [&](TrieNode* node, string path) {
+CONTENT         if ((int)results.size() >= limit) return;
+CONTENT 
+CONTENT         if (node->isEnd)
+CONTENT             results.push_back(node->word);
+CONTENT 
+CONTENT         for (auto child : node->children)
+CONTENT             dfs(child, path + child->ch);
+CONTENT     };
+CONTENT 
+CONTENT     dfs(cur, prefix);
+CONTENT     return results;
+CONTENT }
+CONTENT 
+CONTENT // Bookmarks
+CONTENT struct Bookmark {
+CONTENT     string name;
+CONTENT     Node* node;
+CONTENT     Bookmark* next;
+CONTENT     Bookmark(const string& n, Node* nd) : name(n), node(nd), next(NULL) {}
+CONTENT };
+CONTENT 
+CONTENT // ------------------------------------------------------------------ Globals -----------------------------------------------------------
+CONTENT 
+CONTENT Node* ROOT = new Node("ROOT", true, NULL);
+CONTENT Node* currentNode = ROOT;
+CONTENT 
+CONTENT vector<string> commandHistory;
+CONTENT 
+CONTENT Bookmark* bookmarksHead = NULL;
+CONTENT stack<Node*> backStack;
+CONTENT stack<Node*> forwardStack;
+CONTENT stack<Action> undoStack;
+CONTENT stack<Action> redoStack;
+CONTENT 
+CONTENT vector<string> treeLines;
+CONTENT 
+CONTENT string inputBuffer = "";
+CONTENT 
+CONTENT 
+CONTENT //----------------------------------------------------------For Centring text---------------------------------------------------
+CONTENT 
+CONTENT //Center Alignment
+CONTENT void center(const string& text) {
+CONTENT     CONSOLE_SCREEN_BUFFER_INFO csbi;
+CONTENT     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+CONTENT 
+CONTENT     int width = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+CONTENT     int realLength = 0;
+CONTENT 
+CONTENT     bool ansi = false;
+CONTENT     for (char c : text) {
+CONTENT         if (c == '\033') ansi = true;
+CONTENT         else if (ansi && c == 'm') ansi = false;
+CONTENT         else if (!ansi) realLength++;
+CONTENT     }
+CONTENT 
+CONTENT     int pad = (width - realLength) / 2;
+CONTENT     if (pad < 0) pad = 0;
+CONTENT 
+CONTENT     cout << string(pad, ' ') << text << endl;
+CONTENT }
+CONTENT 
+CONTENT //left alignment
+CONTENT int getLeftPadding() {
+CONTENT     CONSOLE_SCREEN_BUFFER_INFO csbi;
+CONTENT     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+CONTENT 
+CONTENT     int screenWidth = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+CONTENT     int boxWidth = 50; 
+CONTENT     return (screenWidth - boxWidth) / 2;
+CONTENT }
+CONTENT 
+CONTENT //NewLine Prompt
+CONTENT void showPromptNoNewline() {
+CONTENT     string prompt = "\033[96m📂 /" + currentNode->name + " > \033[0m";
+CONTENT     CONSOLE_SCREEN_BUFFER_INFO csbi;
+CONTENT     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+CONTENT     int width = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+CONTENT     int realLength = 0;
+CONTENT     bool ansi = false;
+CONTENT     for (char c : prompt) {
+CONTENT         if (c == '\033') ansi = true;
+CONTENT         else if (ansi && c == 'm') ansi = false;
+CONTENT         else if (!ansi) realLength++;
+CONTENT     }
+CONTENT     int pad = (width - realLength) / 2;
+CONTENT     if (pad < 0) pad = 0;
+CONTENT     cout << string(pad, ' ') << prompt;
+CONTENT }
+CONTENT 
+CONTENT //console width
+CONTENT 
+CONTENT int getConsoleWidth() {
+CONTENT     CONSOLE_SCREEN_BUFFER_INFO csbi;
+CONTENT     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+CONTENT     return csbi.srWindow.Right - csbi.srWindow.Left + 1;
+CONTENT }
+CONTENT void clearConsoleSim() {
+CONTENT system("cls");
+CONTENT }
+CONTENT //------------------------------------------------------ For prompt Entring----------------------------------------------------------------------
+CONTENT 
+CONTENT void parseCommandLine(const string& line, string& cmd, string& argRest) {
+CONTENT stringstream ss(line);
+CONTENT cmd = ""; argRest = "";
+CONTENT if (!(ss >> cmd)) return;
+CONTENT string rest; std::getline(ss, rest);
+CONTENT if (!rest.empty()) {
+CONTENT size_t pos = rest.find_first_not_of(" ");
+CONTENT if (pos != string::npos) rest = rest.substr(pos);
+CONTENT else rest = "";
+CONTENT }
+CONTENT argRest = rest;
+CONTENT }
+CONTENT string toLowerCopy(string s) {
+CONTENT     for (char &c : s) c = tolower(c);
+CONTENT     return s;
+CONTENT }
+CONTENT 
+CONTENT //display promptline
+CONTENT void showPrompt() {
+CONTENT     int padding = getLeftPadding();
+CONTENT     cout << string(padding, ' ')
+CONTENT          << "\033[96m📂 /" << currentNode->name << " > \033[0m";
+CONTENT }
+CONTENT 
+CONTENT //------------------------------------------------------ Header Box of The Project----------------------------------------------------------------------
+CONTENT 
+CONTENT void displayUIHeader() {
+CONTENT 	
+CONTENT     system("cls");
+CONTENT     CONSOLE_SCREEN_BUFFER_INFO csbi;
+CONTENT     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+CONTENT 
+CONTENT     int screenWidth = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+CONTENT     int boxWidth = 50;
+CONTENT     int padding = (screenWidth - boxWidth) / 2;
+CONTENT 
+CONTENT     auto center = [&](string text){
+CONTENT         cout << string(padding, ' ') << text;
+CONTENT     };
+CONTENT 
+CONTENT     cout << "\033[93m";  
+CONTENT 
+CONTENT     center("╔══════════════════════════════════════════════════╗\n");
+CONTENT     center("║ \033[97m          ⭐ MINI FILE EXPLORER ⭐               \033[93m║\n");
+CONTENT     center("╚══════════════════════════════════════════════════╝\n");
+CONTENT 
+CONTENT     // PATH BOX
+CONTENT     center("╔══════════════════════════════════════════════════╗\n");
+CONTENT     center("║ \033[97m📂 Path: /ROOT                                   \033[93m║\n");
+CONTENT     center("╚══════════════════════════════════════════════════╝\n");
+CONTENT 
+CONTENT     cout << "\033[0m"; 
+CONTENT }
+CONTENT void displayUIfoter() {
+CONTENT 	system("cls");
+CONTENT     CONSOLE_SCREEN_BUFFER_INFO csbi;
+CONTENT     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+CONTENT 
+CONTENT     int screenWidth = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+CONTENT     int boxWidth = 50; 
+CONTENT     int padding = (screenWidth - boxWidth) / 2;
+CONTENT 
+CONTENT     auto center = [&](string text){
+CONTENT         cout << string(padding, ' ') << text;
+CONTENT     };
+CONTENT 
+CONTENT     cout << "\033[93m"; 
+CONTENT 
+CONTENT     center("╔══════════════════════════════════════════════════╗\n");
+CONTENT     center("║  \033[97m     👋 Goodbye! Your workspace was saved.      \033[93m║\n");
+CONTENT     center("╚══════════════════════════════════════════════════╝\n");
+CONTENT 
+CONTENT     
+CONTENT     center("╔══════════════════════════════════════════════════╗\n");
+CONTENT     center("║ \033[97m            📅 Date: 05 JAN 2026                 \033[93m║\n");
+CONTENT     center("║ \033[97m            👩‍💻 Developed by: Group 1             \033[93m║\n");
+CONTENT     center("║ \033[97m               👥 Group Members:                 \033[93m║\n");
+CONTENT     center("║ \033[97m       1-Muhammad Usman Ilyas -> (1202)          \033[93m║\n");
+CONTENT     center("║ \033[97m       2-Zeenat               -> (1219)          \033[93m║\n");
+CONTENT     center("║ \033[97m       3-Nimra Farooq         -> (1208)          \033[93m║\n");
+CONTENT     center("║ \033[97m       4-Mursaleen Arshad     -> (1206)          \033[93m║\n");
+CONTENT     center("║ \033[97m            👨‍🏫 Presented To:Sir Naeem            \033[93m║\n");
+CONTENT 	center("║ \033[97m            📚 Data Structures Project           \033[93m║\n");
+CONTENT     center("╚══════════════════════════════════════════════════╝\n");
+CONTENT 
+CONTENT     cout << "\033[0m"; 
+CONTENT }
+CONTENT 
+CONTENT //----------------------------------------------------------------uitilites-----------------------------------------------------------------
+CONTENT 
+CONTENT 
+CONTENT //------------------------------------->>>> For finding child nodes of folders
+CONTENT Node* findChild(Node* dir, const string& name) {
+CONTENT if (dir == NULL) return NULL;
+CONTENT for (size_t i = 0; i < dir->children.size(); ++i) {
+CONTENT if (dir->children[i]->name == name) return dir->children[i];
+CONTENT }
+CONTENT return NULL;
+CONTENT }
+CONTENT 
+CONTENT string joinPath(Node* node) {
+CONTENT vector<string> parts;
+CONTENT Node* cur = node;
+CONTENT while (cur != NULL) {
+CONTENT parts.insert(parts.begin(), cur->name);
+CONTENT cur = cur->parent;
+CONTENT }
+CONTENT string out = "/";
+CONTENT for (size_t i = 0; i < parts.size(); ++i) {
+CONTENT out += parts[i];
+CONTENT if (i + 1 < parts.size()) out += "/";
+CONTENT }
+CONTENT return out;
+CONTENT }
+CONTENT // find node by absolute path 
+CONTENT Node* findNodeByPath(const string& path) {
+CONTENT     if (path.empty()) return NULL;
+CONTENT     // path components split by '/'
+CONTENT     vector<string> parts;
+CONTENT     string cur;
+CONTENT     for (size_t i = 0; i < path.size(); ++i) {
+CONTENT         char c = path[i];
+CONTENT         if (c == '/') {
+CONTENT             if (!cur.empty()) { parts.push_back(cur); cur.clear(); }
+CONTENT         } else {
+CONTENT             cur.push_back(c);
+CONTENT         }
+CONTENT     }
+CONTENT     if (!cur.empty()) parts.push_back(cur);
+CONTENT 
+CONTENT     if (parts.empty()) return NULL;
+CONTENT     // first must match ROOT name
+CONTENT     if (parts[0] != ROOT->name) return NULL;
+CONTENT 
+CONTENT     Node* node = ROOT;
+CONTENT     for (size_t i = 1; i < parts.size(); ++i) {
+CONTENT         node = findChild(node, parts[i]);
+CONTENT         if (!node) return NULL;
+CONTENT     }
+CONTENT     return node;
+CONTENT }
+CONTENT 
+CONTENT 
+CONTENT // ------------------------------------------>>>> File helpers
+CONTENT //create Physical file
+CONTENT bool createPhysicalFile(const string &filename) {
+CONTENT     std::ofstream out(filename.c_str(), std::ios::app); 
+CONTENT     if (!out) return false;
+CONTENT     out.close();
+CONTENT     return true;
+CONTENT }
+CONTENT // Delete physical file
+CONTENT bool deletePhysicalFile(const string &filename) {
+CONTENT     if (std::remove(filename.c_str()) == 0) return true;
+CONTENT     return false;
+CONTENT }
+CONTENT // read physical file 
+CONTENT string readPhysicalFile(const string &filename) {
+CONTENT     std::ifstream in(filename.c_str());
+CONTENT     if (!in) return string();
+CONTENT     std::ostringstream ss;
+CONTENT     ss << in.rdbuf();
+CONTENT     return ss.str();
+CONTENT }
+CONTENT // write/append physical file 
+CONTENT bool appendToPhysicalFile(const string &filename, const string &content) {
+CONTENT     std::ofstream out(filename.c_str(), std::ios::app);
+CONTENT     if (!out) return false;
+CONTENT     out << content;
+CONTENT     out.close();
+CONTENT     return true;
+CONTENT }
+CONTENT 
+CONTENT //-------------------------------->>>> For generating expression tree (infix,postfix,prefix)
+CONTENT int prec(const string& op) {
+CONTENT     if (op=="+"||op=="-") return 1;
+CONTENT     if (op=="*"||op=="/") return 2;
+CONTENT     if (op=="^") return 3;
+CONTENT     return 0;
+CONTENT }
+CONTENT bool isOperator(const string& s) {
+CONTENT     return s=="+"||s=="-"||s=="*"||s=="/"||s=="^";
+CONTENT }
+CONTENT 
+CONTENT vector<string> tokenize(const string& expr) {
+CONTENT     stringstream ss(expr);
+CONTENT     vector<string> t;
+CONTENT     string x;
+CONTENT     while (ss >> x) t.push_back(x);
+CONTENT     return t;
+CONTENT }
+CONTENT //for centring tree
+CONTENT string stripANSI(const string& s) {
+CONTENT     string res;
+CONTENT     bool esc = false;
+CONTENT 
+CONTENT     for (size_t i = 0; i < s.size(); i++) {
+CONTENT         if (s[i] == '\033')
+CONTENT             esc = true;
+CONTENT         else if (esc && s[i] == 'm')
+CONTENT             esc = false;
+CONTENT         else if (!esc)
+CONTENT             res += s[i];
+CONTENT     }
+CONTENT     return res;
+CONTENT }
+CONTENT //postfix tree
+CONTENT ExpNode* buildPostfixTree(const string& expr) {
+CONTENT     stack<ExpNode*> st;
+CONTENT     for (auto& t : tokenize(expr)) {
+CONTENT         if (!isOperator(t))
+CONTENT             st.push(new ExpNode(t));
+CONTENT         else {
+CONTENT             auto r = st.top(); st.pop();
+CONTENT             auto l = st.top(); st.pop();
+CONTENT             auto n = new ExpNode(t);
+CONTENT             n->left = l;
+CONTENT             n->right = r;
+CONTENT             st.push(n);
+CONTENT         }
+CONTENT     }
+CONTENT     return st.empty() ? nullptr : st.top();
+CONTENT }
+CONTENT //prefixtree
+CONTENT ExpNode* buildPrefixTree(const string& expr) {
+CONTENT     auto tokens = tokenize(expr);
+CONTENT     stack<ExpNode*> st;
+CONTENT 
+CONTENT     for (int i = tokens.size() - 1; i >= 0; --i) {
+CONTENT         if (!isOperator(tokens[i]))
+CONTENT             st.push(new ExpNode(tokens[i]));
+CONTENT         else {
+CONTENT             auto l = st.top(); st.pop();
+CONTENT             auto r = st.top(); st.pop();
+CONTENT             auto n = new ExpNode(tokens[i]);
+CONTENT             n->left = l;
+CONTENT             n->right = r;
+CONTENT             st.push(n);
+CONTENT         }
+CONTENT     }
+CONTENT     return st.empty() ? nullptr : st.top();
+CONTENT }
+CONTENT //converting infix to postfix for infixtree
+CONTENT string infixToPostfix(const string& expr) {
+CONTENT     stack<string> st;
+CONTENT     string out;
+CONTENT 
+CONTENT     for (auto& t : tokenize(expr)) {
+CONTENT         if (!isOperator(t) && t!="(" && t!=")") out += t+" ";
+CONTENT         else if (t=="(") st.push(t);
+CONTENT         else if (t==")") {
+CONTENT             while (!st.empty() && st.top()!="(") {
+CONTENT                 out += st.top()+" "; st.pop();
+CONTENT             }
+CONTENT             st.pop();
+CONTENT         }
+CONTENT         else {
+CONTENT             while (!st.empty() && prec(st.top())>=prec(t)) {
+CONTENT                 out += st.top()+" "; st.pop();
+CONTENT             }
+CONTENT             st.push(t);
+CONTENT         }
+CONTENT     }
+CONTENT     while (!st.empty()) {
+CONTENT         out += st.top()+" "; st.pop();
+CONTENT     }
+CONTENT     return out;
+CONTENT }
+CONTENT //infixtree
+CONTENT ExpNode* buildInfixTree(const string& expr) {
+CONTENT     return buildPostfixTree(infixToPostfix(expr));
+CONTENT }
+CONTENT //create tree
+CONTENT void genTree(
+CONTENT     ExpNode* node,
+CONTENT     string prefix,
+CONTENT     bool isLast,
+CONTENT     bool isRoot,
+CONTENT     bool isLeft
+CONTENT ) {
+CONTENT     if (!node) return;
+CONTENT 
+CONTENT     string color =
+CONTENT         isRoot ? CLR_ROOT :
+CONTENT         isLeft ? CLR_LEFT :
+CONTENT                  CLR_RIGHT;
+CONTENT 
+CONTENT     string line = prefix;
+CONTENT 
+CONTENT     if (!isRoot) {
+CONTENT         line += string(CLR_LINE)
+CONTENT               + (isLast ? "└── " : "├── ")
+CONTENT               + CLR_RESET;
+CONTENT     }
+CONTENT 
+CONTENT     line += color + node->val + CLR_RESET;
+CONTENT     treeLines.push_back(line);
+CONTENT 
+CONTENT    string nextPrefix = prefix +
+CONTENT     (isLast
+CONTENT         ? "    "
+CONTENT         : string(CLR_LINE) + "│" + CLR_RESET + "   ");
+CONTENT 
+CONTENT 
+CONTENT     if (node->left)
+CONTENT         genTree(node->left, nextPrefix, false, false, true);
+CONTENT 
+CONTENT     if (node->right)
+CONTENT         genTree(node->right, nextPrefix, true, false, false);
+CONTENT }
+CONTENT 
+CONTENT //print created tree
+CONTENT void printExpressionTree(ExpNode* root, const string& title) {
+CONTENT     if (!root) return;
+CONTENT 
+CONTENT     treeLines.clear();
+CONTENT     genTree(root, "", true, true, false);
+CONTENT 
+CONTENT     int maxLen = 0;
+CONTENT     for (auto& l : treeLines)
+CONTENT         maxLen = std::max(maxLen, (int)stripANSI(l).length());
+CONTENT 
+CONTENT     int width = getConsoleWidth();
+CONTENT     int pad = std::max(0, (width - maxLen) / 2);
+CONTENT 
+CONTENT     cout << "\n";
+CONTENT     cout << string((width - title.length()) / 2, ' ')
+CONTENT          << CLR_ROOT << title << CLR_RESET << "\n\n";
+CONTENT 
+CONTENT     for (auto& l : treeLines)
+CONTENT         cout << string(pad, ' ') << l << "\n";
+CONTENT 
+CONTENT     cout << "\n";
+CONTENT }
+CONTENT //------------------------->>>>>for command suggesstion
+CONTENT void initCommandTrie() {
+CONTENT     vector<string> cmds = {
+CONTENT 
+CONTENT         "ls",
+CONTENT         "mkdir",
+CONTENT         "rm",
+CONTENT         "touch",
+CONTENT         "view",
+CONTENT         "edit",
+CONTENT         "rename",
+CONTENT         "cd",
+CONTENT         "tree",
+CONTENT         "infixtree",
+CONTENT         "prefixtree",
+CONTENT         "postfixtree",
+CONTENT         "undo",
+CONTENT         "redo",
+CONTENT         "search",
+CONTENT         "bookmark",
+CONTENT         "history",
+CONTENT         "clearhistory",
+CONTENT         "lock",
+CONTENT         "unlock",
+CONTENT         "clear",
+CONTENT         "exit"
+CONTENT         
+CONTENT     };
+CONTENT 
+CONTENT     for (auto &cmd : cmds)
+CONTENT         trieInsert(cmd);
+CONTENT }
+CONTENT 
+CONTENT 
+CONTENT // --------------------------->>>>>>>> For LOCK system
+CONTENT //lock item
+CONTENT void lockItem(Node* currentFolder, const string& name) {
+CONTENT 
+CONTENT     Node* item = findChild(currentFolder, name);
+CONTENT 
+CONTENT     if (!item) {
+CONTENT         cout << "\033[91m"; 
+CONTENT         center("❌ Item not found.\n");
+CONTENT         cout << "\033[0m";
+CONTENT         return;
+CONTENT     }
+CONTENT 
+CONTENT     if (item->isLocked) {
+CONTENT         center("🔐 Item is already locked.\n");
+CONTENT         return;
+CONTENT     }
+CONTENT 
+CONTENT     item->isLocked = true;
+CONTENT 
+CONTENT     cout << "\033[92m"; 
+CONTENT     center("🔒 Item locked successfully!\n");
+CONTENT     cout << "\033[0m";
+CONTENT }
+CONTENT 
+CONTENT 
+CONTENT //  UNLOCK ITEM 
+CONTENT void unlockItem(Node* currentFolder, const string& name) {
+CONTENT 
+CONTENT     Node* item = findChild(currentFolder, name);
+CONTENT 
+CONTENT     if (!item) {
+CONTENT         cout << "\033[91m";
+CONTENT         center("❌ Item not found.\n");
+CONTENT         cout << "\033[0m";
+CONTENT         return;
+CONTENT     }
+CONTENT 
+CONTENT     if (!item->isLocked) {
+CONTENT         center("🔓 Item is already unlocked.\n");
+CONTENT         return;
+CONTENT     }
+CONTENT 
+CONTENT     item->isLocked = false;
+CONTENT 
+CONTENT     cout << "\033[92m"; 
+CONTENT     center("🔓 Item unlocked successfully!\n");
+CONTENT     cout << "\033[0m";
+CONTENT }
+CONTENT 
+CONTENT // ----------------->>>>>>>>>> complete Bookmarks functions
+CONTENT 
+CONTENT //list
+CONTENT void bookmark_list() {
+CONTENT     int padding = getLeftPadding();
+CONTENT     Bookmark* b = bookmarksHead;
+CONTENT 
+CONTENT     cout << string(padding, ' ') << "🔖 Saved Bookmarks:\n";
+CONTENT 
+CONTENT     if (!b) {
+CONTENT         cout << string(padding, ' ') << "\033[91m(none)\033[0m\n";
+CONTENT         return;
+CONTENT     }
+CONTENT 
+CONTENT     while (b) {
+CONTENT         cout << string(padding, ' ') << "📌 "
+CONTENT              << b->name << "  ->  " << joinPath(b->node) << endl;
+CONTENT         b = b->next;
+CONTENT     }
+CONTENT }
+CONTENT //jump to bookmark
+CONTENT void bookmark_go(const string& name) {
+CONTENT     Bookmark* b = bookmarksHead;
+CONTENT     while (b) {
+CONTENT         if (b->name == name) {
+CONTENT             if (!b->node->isFolder) {
+CONTENT                 center("📄 Opening bookmarked file...");
+CONTENT                 center("📝 Content:");
+CONTENT                 center(readPhysicalFile(b->node->name)); 
+CONTENT             } else {
+CONTENT                 currentNode = b->node;
+CONTENT                 center("📂 Jumped to Folder: " + name);
+CONTENT             }
+CONTENT             return;
+CONTENT         }
+CONTENT         b = b->next;
+CONTENT     }
+CONTENT     cout << "\033[31m"; center("❌ Bookmark Not Found!"); cout << "\033[0m";
+CONTENT }
+CONTENT 
+CONTENT //add new bookmark
+CONTENT void bookmark_add(const string& name) {
+CONTENT     if (name.empty()) { center("ℹ Usage: bookmark add <name>"); return; }
+CONTENT     if (name == ".") {
+CONTENT         Bookmark* b = new Bookmark(currentNode->name, currentNode);
+CONTENT         b->next = bookmarksHead; bookmarksHead = b;
+CONTENT         currentNode->isBookmarked = true;
+CONTENT         // push undo action
+CONTENT         undoStack.push(Action("bookmark_add", nullptr, nullptr, -1, currentNode->name));
+CONTENT         while (!redoStack.empty()) redoStack.pop();
+CONTENT         center("🔖 Bookmark Added: " + currentNode->name);
+CONTENT         return;
+CONTENT     }
+CONTENT     Node* target = findChild(currentNode, name);
+CONTENT     if (!target) { cout << "\033[31m"; center("❌ Item Not Found!"); cout << "\033[0m"; return; }
+CONTENT     Bookmark* b = new Bookmark(name, target);
+CONTENT     b->next = bookmarksHead; bookmarksHead = b;
+CONTENT     target->isBookmarked = true;
+CONTENT     // push undo action (bookmark_add)
+CONTENT     undoStack.push(Action("bookmark_add", nullptr, nullptr, -1, name));
+CONTENT     while (!redoStack.empty()) redoStack.pop();
+CONTENT     center("🔖 Bookmark Added: " + name);
+CONTENT }
+CONTENT 
+CONTENT //delete bookmark
+CONTENT void bookmark_remove(const string& name) {
+CONTENT     Bookmark* b = bookmarksHead; Bookmark* prev = NULL;
+CONTENT     while (b) {
+CONTENT         if (b->name == name) {
+CONTENT             if (b->node) b->node->isBookmarked = false;
+CONTENT             if (prev) prev->next = b->next; else bookmarksHead = b->next;
+CONTENT             undoStack.push(Action("bookmark_remove", nullptr, nullptr, -1, name));
+CONTENT             while (!redoStack.empty()) redoStack.pop();
+CONTENT             delete b;
+CONTENT             center("🗑 Bookmark Removed: " + name);
+CONTENT             return;
+CONTENT         }
+CONTENT         prev = b; b = b->next;
+CONTENT     }
+CONTENT     cout << "\033[31m"; center("❌ Bookmark Not Found!"); cout << "\033[0m";
+CONTENT }
+CONTENT 
+CONTENT 
+CONTENT // ------------------------------>>>>>>>>>>>>>> complete search functionality
+CONTENT void searchDFS(Node* node, const string& keyword, vector<string>& results, const string& path="") {
+CONTENT if (!node) return;
+CONTENT string currentPath = path + "/" + node->name;
+CONTENT if (node->name.find(keyword) != string::npos) results.push_back(currentPath);
+CONTENT for (size_t i = 0; i < node->children.size(); ++i) {
+CONTENT searchDFS(node->children[i], keyword, results, currentPath);
+CONTENT }
+CONTENT }
+CONTENT 
+CONTENT void searchBFS(Node* start, const string& keyword, vector<string>& results) {
+CONTENT if (!start) return;
+CONTENT vector<Node*> queue;
+CONTENT vector<string> paths;
+CONTENT queue.push_back(start);
+CONTENT paths.push_back("/" + start->name);
+CONTENT 
+CONTENT 
+CONTENT for (size_t i = 0; i < queue.size(); ++i) {
+CONTENT     Node* node = queue[i];
+CONTENT     string path = paths[i];
+CONTENT     if (node->name.find(keyword) != string::npos) results.push_back(path);
+CONTENT     for (size_t j = 0; j < node->children.size(); ++j) {
+CONTENT         queue.push_back(node->children[j]);
+CONTENT         paths.push_back(path + "/" + node->children[j]->name);
+CONTENT     }
+CONTENT   }
+CONTENT }
+CONTENT 
+CONTENT // ------------------------->>>>>>>>>>>>>>>>> Tree Printing of complete workspace
+CONTENT 
+CONTENT 
+CONTENT void generateTree(Node* node, string prefix, bool isLast) {
+CONTENT     if (!node) return;
+CONTENT 
+CONTENT     string icon;
+CONTENT     if (node->isLocked) icon = "🔒" + string(node->isFolder ? "📁 " : "📄 ");
+CONTENT     else icon = node->isFolder ? "📁 " : "📄 ";
+CONTENT 
+CONTENT     string current = prefix + (prefix == "" ? "" : (isLast ? "└── " : "├── ")) + icon + node->name;
+CONTENT     treeLines.push_back(current);
+CONTENT 
+CONTENT     string newPrefix = prefix + (isLast ? "    " : "│   ");
+CONTENT 
+CONTENT     for (size_t i = 0; i < node->children.size(); i++)
+CONTENT         generateTree(node->children[i], newPrefix, i == node->children.size() - 1);
+CONTENT }
+CONTENT 
+CONTENT 
+CONTENT 
+CONTENT // ------------------------------------------------------>>>>>>>>>>>>> cmd_Commands-----------------------------------------------------------
+CONTENT 
+CONTENT //-------------------------->>>>Expression tree commands
+CONTENT //postfixtree
+CONTENT void cmd_postfix_tree(const string& file) {
+CONTENT     std::ifstream in(file);
+CONTENT     if (!in) { center("❌ File not found\n"); return; }
+CONTENT     string expr; getline(in, expr);
+CONTENT     printExpressionTree(buildPostfixTree(expr),
+CONTENT         "🌳 POSTFIX EXPRESSION TREE 🌳");
+CONTENT }
+CONTENT 
+CONTENT //prefixtree
+CONTENT void cmd_prefix_tree(const string& file) {
+CONTENT     std::ifstream in(file);
+CONTENT     if (!in) { center("❌ File not found\n"); return; }
+CONTENT     string expr; getline(in, expr);
+CONTENT     printExpressionTree(buildPrefixTree(expr),
+CONTENT         "🌳 PREFIX EXPRESSION TREE 🌳");
+CONTENT }
+CONTENT 
+CONTENT //infixtree
+CONTENT void cmd_infix_tree(const string& file) {
+CONTENT     std::ifstream in(file);
+CONTENT     if (!in) { center("❌ File not found\n"); return; }
+CONTENT     string expr; getline(in, expr);
+CONTENT     printExpressionTree(buildInfixTree(expr),
+CONTENT         "🌳 INFIX EXPRESSION TREE 🌳");
+CONTENT }
+CONTENT 
+CONTENT 
+CONTENT //----------------------------->>>> create file commands
+CONTENT //create
+CONTENT void cmd_touch(const string& name) {
+CONTENT     if (name.empty()) {
+CONTENT 	 cout << "\033[91m"; 
+CONTENT 	 center("❌ touch: missing file name"); 
+CONTENT 	 cout << "\033[0m"; return; 
+CONTENT 	 }
+CONTENT     if (findChild(currentNode, name)) {
+CONTENT 	 cout << "\033[91m"; 
+CONTENT 	 center("⚠️ File already exists"); 
+CONTENT 	 cout << "\033[0m"; 
+CONTENT 	 return; 
+CONTENT 	 }
+CONTENT     Node* f = new Node(name, false, currentNode);
+CONTENT     
+CONTENT     if (!createPhysicalFile(name)) {
+CONTENT         cout << "\033[91m"; 
+CONTENT 		center("❌ Failed to create file on disk"); 
+CONTENT 		cout << "\033[0m";
+CONTENT         delete f; return;
+CONTENT     }
+CONTENT     currentNode->children.push_back(f);
+CONTENT     
+CONTENT     int idx = (int)currentNode->children.size() - 1;
+CONTENT     undoStack.push(Action("create", f, currentNode, idx, ""));
+CONTENT     while (!redoStack.empty()) redoStack.pop();
+CONTENT     cout << "\033[92m"; center("📄 File created: " + name); cout << "\033[0m";
+CONTENT }
+CONTENT 
+CONTENT //view
+CONTENT void cmd_view(const string& name) {
+CONTENT     if (name.empty()) { 
+CONTENT 	cout << "\033[91m"; 
+CONTENT 	center("❌ view: missing filename"); 
+CONTENT 	cout << "\033[0m"; 
+CONTENT 	return; 
+CONTENT 	}
+CONTENT     Node* f = findChild(currentNode, name);
+CONTENT     if (!f || f->isFolder) { 
+CONTENT 	cout << "\033[91m"; 
+CONTENT 	center("❌ File not found: " + name); 
+CONTENT 	cout << "\033[0m"; 
+CONTENT 	return; 
+CONTENT 	}
+CONTENT     if (f->isLocked) { 
+CONTENT 	cout << "\033[91m"; 
+CONTENT 	center("🔒 Cannot view: File is LOCKED"); 
+CONTENT 	cout << "\033[0m"; 
+CONTENT 	return; 
+CONTENT 	}
+CONTENT     
+CONTENT     string data = readPhysicalFile(name);
+CONTENT     cout << "\033[96m"; 
+CONTENT 	center("📄 File content: " + name); 
+CONTENT 	cout << "\033[0m";
+CONTENT     if (data.empty()) center("(empty)");
+CONTENT     else {
+CONTENT         std::istringstream ss(data);
+CONTENT         string line;
+CONTENT         while (std::getline(ss, line)) center(line);
+CONTENT     }
+CONTENT }
+CONTENT 
+CONTENT //edit
+CONTENT void cmd_edit(const string& name) {
+CONTENT     if (name.empty()) {
+CONTENT 	 cout << "\033[91m"; 
+CONTENT 	 center("❌ edit: missing filename"); 
+CONTENT 	 cout << "\033[0m"; 
+CONTENT 	 return; 
+CONTENT 	 }
+CONTENT     Node* f = findChild(currentNode, name);
+CONTENT     if (!f || f->isFolder) {
+CONTENT 	 cout << "\033[91m"; 
+CONTENT 	 center("❌ File not found"); 
+CONTENT 	 cout << "\033[0m"; 
+CONTENT 	 return;
+CONTENT 	  }
+CONTENT     if (f->isLocked) { 
+CONTENT 	cout << "\033[91m"; 
+CONTENT 	center("🔒 Cannot edit: File is LOCKED"); 
+CONTENT 	cout << "\033[0m"; 
+CONTENT 	return; 
+CONTENT 	}
+CONTENT     cout << "\033[93m"; 
+CONTENT 	center("✏ Enter text (':wq' save, ':q' cancel):"); 
+CONTENT 	cout << "\033[0m";
+CONTENT     string line, newContent;
+CONTENT     
+CONTENT     while (true) {
+CONTENT         if (!std::getline(cin, line)) break;
+CONTENT         if (line == ":wq") break;
+CONTENT         if (line == ":q") { 
+CONTENT 		cout << "\033[91m"; center("🚫 Edit cancelled"); 
+CONTENT 		cout << "\033[0m"; 
+CONTENT 		return; 
+CONTENT 		}
+CONTENT         newContent += line + "\n";
+CONTENT     }
+CONTENT     if (!newContent.empty()) {
+CONTENT         if (!appendToPhysicalFile(name, newContent)) { 
+CONTENT 		cout << "\033[91m"; 
+CONTENT 		center("❌ Failed to write to disk"); 
+CONTENT 		cout << "\033[0m"; 
+CONTENT 		return; 
+CONTENT 		}
+CONTENT         f->fileContent += newContent;
+CONTENT     }
+CONTENT     cout << "\033[92m"; center("💾 Saved"); cout << "\033[0m";
+CONTENT }
+CONTENT //----------------------------->>>>>>>>>   folder commanDs
+CONTENT //list
+CONTENT void cmd_ls() {
+CONTENT     cout << "\033[96m";
+CONTENT     center("📂 Contents");
+CONTENT     cout << "\033[0m";
+CONTENT 
+CONTENT     if (currentNode->children.empty()) {
+CONTENT         center("(empty)");
+CONTENT         return;
+CONTENT     }
+CONTENT 
+CONTENT     for (size_t i = 0; i < currentNode->children.size(); ++i) {
+CONTENT         Node* c = currentNode->children[i];
+CONTENT         string icon = c->isFolder ? "📁 " : "📄 ";
+CONTENT         center(icon + c->name);
+CONTENT     }
+CONTENT }
+CONTENT 
+CONTENT //create folder
+CONTENT void cmd_mkdir(const string& name) {
+CONTENT     if (name.empty()) { 
+CONTENT 	center("❌ mkdir: missing name"); 
+CONTENT 	return;
+CONTENT 	 }
+CONTENT     if (findChild(currentNode, name)) { 
+CONTENT 	center("⚠ Folder already exists.");
+CONTENT 	return; 
+CONTENT 	}
+CONTENT     Node* n = new Node(name, true, currentNode);
+CONTENT     currentNode->children.push_back(n);
+CONTENT     int idx = (int)currentNode->children.size() - 1;
+CONTENT     undoStack.push(Action("create", n, currentNode, idx, ""));
+CONTENT     while (!redoStack.empty()) redoStack.pop();
+CONTENT     center("📁 Folder created: " + name);
+CONTENT }
+CONTENT 
+CONTENT //delete folder/file
+CONTENT void cmd_rm(const string& name) {
+CONTENT     if (name.empty()) {
+CONTENT 	 center("❌ rm: missing name");
+CONTENT 	  return; 
+CONTENT 	  }
+CONTENT     Node* target = findChild(currentNode, name);
+CONTENT     if (!target) { 
+CONTENT 	cout << "\033[91m"; 
+CONTENT 	center("❌ Item not found: " + name); 
+CONTENT 	cout << "\033[0m"; return; 
+CONTENT 	}
+CONTENT     if (target->isLocked) {
+CONTENT 	 cout << "\033[91m"; 
+CONTENT 	 center("🔒 Cannot delete: Item is LOCKED."); 
+CONTENT 	 cout << "\033[0m"; return; 
+CONTENT 	 }
+CONTENT     auto &children = currentNode->children;
+CONTENT     auto it = std::find(children.begin(), children.end(), target);
+CONTENT     int idx = (it == children.end() ? -1 : (int)distance(children.begin(), it));
+CONTENT     if (idx == -1) {
+CONTENT 	 center("⚠ Internal error: cannot find child index.");
+CONTENT 	 return; 
+CONTENT 	 }
+CONTENT     undoStack.push(Action("delete", target, currentNode, idx, ""));
+CONTENT     while (!redoStack.empty()) redoStack.pop();
+CONTENT     children.erase(it);
+CONTENT     if (!target->isFolder) deletePhysicalFile(target->name);
+CONTENT     if (target->isBookmarked) {
+CONTENT         target->isBookmarked = false;
+CONTENT         Bookmark* b = bookmarksHead; Bookmark* prev = NULL;
+CONTENT         while (b) {
+CONTENT             if (b->node == target) {
+CONTENT                 if (prev) prev->next = b->next; else bookmarksHead = b->next;
+CONTENT                 delete b; break;
+CONTENT             }
+CONTENT             prev = b; b = b->next;
+CONTENT         }
+CONTENT     }
+CONTENT     center("🗑️ Deleted: " + name);
+CONTENT }
+CONTENT 
+CONTENT //rename folder /file
+CONTENT void cmd_rename(const string& rest) {
+CONTENT     size_t spacePos = rest.find(" ");
+CONTENT     if (spacePos == string::npos) {
+CONTENT         center("\033[91m❌ rename: missing arguments\033[0m");
+CONTENT         return;
+CONTENT     }
+CONTENT 
+CONTENT     string oldName = rest.substr(0, spacePos);
+CONTENT     string newName = rest.substr(spacePos + 1);
+CONTENT 
+CONTENT     Node* target = findChild(currentNode, oldName);
+CONTENT     if (!target) {
+CONTENT         center("\033[91m🚫 Item not found\033[0m");
+CONTENT         return;
+CONTENT     }
+CONTENT 
+CONTENT     if (target->isLocked) {
+CONTENT         center("\033[93m🔒 Cannot rename: Item is locked\033[0m");
+CONTENT         return;
+CONTENT     }
+CONTENT 
+CONTENT     if (findChild(currentNode, newName)) {
+CONTENT         center("\033[93m⚠️ Name already exists\033[0m");
+CONTENT         return;
+CONTENT     }
+CONTENT 
+CONTENT     target->name = newName;
+CONTENT     center("\033[92m✨ Renamed Successfully\033[0m");
+CONTENT }
+CONTENT 
+CONTENT // going into folder
+CONTENT void cmd_cd(const string& name) {
+CONTENT     if (name.empty()) { 
+CONTENT 	center("❌ cd: missing argument"); 
+CONTENT 	return;
+CONTENT 	 }
+CONTENT     if (name == "/") { 
+CONTENT 	currentNode = ROOT; 
+CONTENT 	center("📁 Now at ROOT"); 
+CONTENT 	return; 
+CONTENT 	}
+CONTENT     if (name == "..") { 
+CONTENT 	if (currentNode->parent) { 
+CONTENT 	currentNode = currentNode->parent; 
+CONTENT 	center("⬆️ Moved to parent folder");
+CONTENT 	 } 
+CONTENT 	 else 
+CONTENT 	 center("⚠ Already at ROOT"); 
+CONTENT 	 return; 
+CONTENT 	 }
+CONTENT     Node* target = findChild(currentNode, name);
+CONTENT     if (!target || !target->isFolder) {
+CONTENT 	 center("❌ Folder not found: " + name); 
+CONTENT 	 return; 
+CONTENT 	 }
+CONTENT     if (target->isLocked) { 
+CONTENT 	center("🔒 Cannot enter: Folder is LOCKED.");
+CONTENT 	 return; 
+CONTENT 	 }
+CONTENT     currentNode = target; center("📁 Entered: " + name);
+CONTENT }
+CONTENT 
+CONTENT //search any file folder
+CONTENT void cmd_search(const string& rest) {
+CONTENT     string keyword = rest;
+CONTENT     bool useDFS = true;
+CONTENT     size_t spacePos = rest.find(" ");
+CONTENT     if (spacePos != string::npos) {
+CONTENT         keyword = rest.substr(0, spacePos);
+CONTENT         string mode = rest.substr(spacePos + 1);
+CONTENT         if (mode == "bfs") useDFS = false;
+CONTENT     }
+CONTENT 
+CONTENT     vector<string> results;
+CONTENT     if (useDFS) searchDFS(ROOT, keyword, results);
+CONTENT     else searchBFS(ROOT, keyword, results);
+CONTENT 
+CONTENT     center("🔍 Search results for \"" + keyword + "\" (" + (useDFS ? "DFS" : "BFS") + ")");
+CONTENT 
+CONTENT     if (results.empty()) {
+CONTENT         center("(🚫 No matches)");
+CONTENT     } else {
+CONTENT         for (size_t i = 0; i < results.size(); ++i) {
+CONTENT             center(results[i]);
+CONTENT         }
+CONTENT     }
+CONTENT }
+CONTENT 
+CONTENT 
+CONTENT //--------------------------->>>>>>>>>tree for workspace
+CONTENT void cmd_tree() {
+CONTENT     treeLines.clear();
+CONTENT 
+CONTENT     generateTree(ROOT, "", true);
+CONTENT 
+CONTENT     int maxLen = 0;
+CONTENT     for (auto &line : treeLines)
+CONTENT         maxLen = std::max(maxLen, (int)line.length());
+CONTENT 
+CONTENT     int screenWidth = getConsoleWidth();
+CONTENT     int offset = std::max(0, (screenWidth - maxLen) / 2);
+CONTENT 
+CONTENT     cout << "\n";
+CONTENT     string title = "🌲 DIRECTORY TREE VIEW 🌲";
+CONTENT     cout << string((screenWidth - title.length()) / 2, ' ') << title << "\n\n";
+CONTENT 
+CONTENT     for (auto &line : treeLines) {
+CONTENT         cout << string(offset, ' ') << line << "\n";
+CONTENT     }
+CONTENT 
+CONTENT     cout << "\n";
+CONTENT }
+CONTENT 
+CONTENT // ----------------------------------->>>>>>>>>> history commands
+CONTENT void cmd_history() {
+CONTENT     int padding = getLeftPadding();
+CONTENT     
+CONTENT     if (commandHistory.empty()) {
+CONTENT         cout << string(padding, ' ') << "\033[91m(No history)\033[0m\n";
+CONTENT         return;
+CONTENT     }
+CONTENT 
+CONTENT     cout << string(padding, ' ') << "📜 Command History:\n";
+CONTENT     for (const auto &cmd : commandHistory) {
+CONTENT         cout << string(padding, ' ') << "➡️  " << cmd << endl;
+CONTENT     }
+CONTENT }
+CONTENT void clearCommandHistory() {
+CONTENT     commandHistory.clear();
+CONTENT     std::ofstream out("history.txt", std::ios::trunc);
+CONTENT     out.close();
+CONTENT     center("\033[92m🧹 Command History Cleared\033[0m");
+CONTENT }
+CONTENT 
+CONTENT //Undo
+CONTENT void cmd_undo() {
+CONTENT     if (undoStack.empty()) { center("⚠ Nothing to undo"); return; }
+CONTENT     Action a = undoStack.top(); undoStack.pop();
+CONTENT 
+CONTENT     if (a.type == "create") {
+CONTENT         if (a.parent) {
+CONTENT             auto &children = a.parent->children;
+CONTENT             auto it = std::find(children.begin(), children.end(), a.node);
+CONTENT             if (it != children.end()) children.erase(it);
+CONTENT             
+CONTENT             if (a.node && !a.node->isFolder) deletePhysicalFile(a.node->name);
+CONTENT             redoStack.push(Action("create", a.node, a.parent, a.index, ""));
+CONTENT             center("↩️ Undo: removed created item");
+CONTENT         } else center("⚠ Undo error: parent missing");
+CONTENT     }
+CONTENT     else if (a.type == "delete") {
+CONTENT         if (a.parent) {
+CONTENT             auto &children = a.parent->children;
+CONTENT             int idx = a.index;
+CONTENT             if (idx < 0 || idx > (int)children.size()) idx = (int)children.size();
+CONTENT             children.insert(children.begin() + idx, a.node);
+CONTENT             a.node->parent = a.parent;
+CONTENT             if (!a.node->isFolder) createPhysicalFile(a.node->name);
+CONTENT             redoStack.push(Action("delete", a.node, a.parent, idx, ""));
+CONTENT             center("↩️ Undo: restored deleted item");
+CONTENT         } else center("⚠ Undo error: parent missing");
+CONTENT     }
+CONTENT     else if (a.type == "bookmark_add") {
+CONTENT         string bname = a.extra;
+CONTENT         Bookmark* b = bookmarksHead; Bookmark* prev = NULL;
+CONTENT         while (b) {
+CONTENT             if (b->name == bname) {
+CONTENT                 if (b->node) b->node->isBookmarked = false;
+CONTENT                 if (prev) prev->next = b->next; else bookmarksHead = b->next;
+CONTENT                 delete b;
+CONTENT                 redoStack.push(Action("bookmark_add", nullptr, nullptr, -1, bname));
+CONTENT                 center("↩️ Undo: removed bookmark " + bname);
+CONTENT                 return;
+CONTENT             }
+CONTENT             prev = b; b = b->next;
+CONTENT         }
+CONTENT         center("⚠ Undo bookmark_add: not found");
+CONTENT     }
+CONTENT     else if (a.type == "bookmark_remove") {
+CONTENT     	
+CONTENT         string bname = a.extra;
+CONTENT         std::function<Node*(Node*)> findByName = [&](Node* nd)->Node* {
+CONTENT             if (!nd) return nullptr;
+CONTENT             if (nd->name == bname) return nd;
+CONTENT             for (auto ch : nd->children) {
+CONTENT                 Node* r = findByName(ch);
+CONTENT                 if (r) return r;
+CONTENT             }
+CONTENT             return nullptr;
+CONTENT         };
+CONTENT         Node* target = findByName(ROOT);
+CONTENT         if (target) {
+CONTENT             Bookmark* nb = new Bookmark(bname, target);
+CONTENT             nb->next = bookmarksHead; bookmarksHead = nb;
+CONTENT             target->isBookmarked = true;
+CONTENT             redoStack.push(Action("bookmark_remove", nullptr, nullptr, -1, bname));
+CONTENT             center("↩️ Undo: restored bookmark " + bname);
+CONTENT         } else center("⚠ Undo bookmark_remove: original target not found");
+CONTENT     }
+CONTENT     else if (a.type == "rename") {
+CONTENT         string oldNew = a.extra;
+CONTENT         size_t sep = oldNew.find('|');
+CONTENT         string oldName = (sep==string::npos? oldNew : oldNew.substr(0, sep));
+CONTENT         string newName = (sep==string::npos? string() : oldNew.substr(sep+1));
+CONTENT         if (a.node) {
+CONTENT             a.node->name = oldName;
+CONTENT             redoStack.push(Action("rename", a.node, a.parent, a.index, oldName + "|" + newName));
+CONTENT             center("↩️ Undo: rename reverted to " + oldName);
+CONTENT         } else center("⚠ Undo rename: node missing");
+CONTENT     }
+CONTENT     else {
+CONTENT         center("⚠ Unsupported undo action");
+CONTENT     }
+CONTENT }
+CONTENT 
+CONTENT //redo
+CONTENT void cmd_redo() {
+CONTENT     if (redoStack.empty()) { center("⚠ Nothing to redo"); return; }
+CONTENT     Action a = redoStack.top(); redoStack.pop();
+CONTENT 
+CONTENT     if (a.type == "create") {
+CONTENT         if (a.parent) {
+CONTENT             auto &children = a.parent->children;
+CONTENT             int idx = a.index;
+CONTENT             if (idx < 0 || idx > (int)children.size()) idx = (int)children.size();
+CONTENT             children.insert(children.begin() + idx, a.node);
+CONTENT             a.node->parent = a.parent;
+CONTENT             if (!a.node->isFolder) createPhysicalFile(a.node->name);
+CONTENT             undoStack.push(Action("create", a.node, a.parent, idx, ""));
+CONTENT             center("🔁 Redo: recreated item");
+CONTENT         } else center("⚠ Redo error: parent missing");
+CONTENT     }
+CONTENT     else if (a.type == "delete") {
+CONTENT         if (a.parent) {
+CONTENT             auto &children = a.parent->children;
+CONTENT             auto it = std::find(children.begin(), children.end(), a.node);
+CONTENT             if (it != children.end()) children.erase(it);
+CONTENT             if (!a.node->isFolder) deletePhysicalFile(a.node->name);
+CONTENT             undoStack.push(Action("delete", a.node, a.parent, a.index, ""));
+CONTENT             center("🔁 Redo: deleted item again");
+CONTENT         } else center("⚠ Redo error: parent missing");
+CONTENT     }
+CONTENT     else if (a.type == "bookmark_add") {
+CONTENT         string bname = a.extra;
+CONTENT         std::function<Node*(Node*)> findByName = [&](Node* nd)->Node* {
+CONTENT             if (!nd) return nullptr;
+CONTENT             if (nd->name == bname) return nd;
+CONTENT             for (auto ch : nd->children) {
+CONTENT                 Node* r = findByName(ch);
+CONTENT                 if (r) return r;
+CONTENT             }
+CONTENT             return nullptr;
+CONTENT         };
+CONTENT         Node* target = findByName(ROOT);
+CONTENT         if (target) {
+CONTENT             Bookmark* nb = new Bookmark(bname, target);
+CONTENT             nb->next = bookmarksHead; bookmarksHead = nb;
+CONTENT             target->isBookmarked = true;
+CONTENT             undoStack.push(Action("bookmark_add", nullptr, nullptr, -1, bname));
+CONTENT             center("🔁 Redo: bookmark added " + bname);
+CONTENT         } else center("⚠ Redo bookmark_add: node not found");
+CONTENT     }
+CONTENT     else if (a.type == "bookmark_remove") {
+CONTENT         string bname = a.extra;
+CONTENT         Bookmark* b = bookmarksHead; Bookmark* prev = NULL;
+CONTENT         while (b) {
+CONTENT             if (b->name == bname) {
+CONTENT                 if (b->node) b->node->isBookmarked = false;
+CONTENT                 if (prev) prev->next = b->next; else bookmarksHead = b->next;
+CONTENT                 delete b;
+CONTENT                 undoStack.push(Action("bookmark_remove", nullptr, nullptr, -1, bname));
+CONTENT                 center("🔁 Redo: bookmark removed " + bname);
+CONTENT                 return;
+CONTENT             }
+CONTENT             prev = b; b = b->next;
+CONTENT         }
+CONTENT         center("⚠ Redo bookmark_remove: not found");
+CONTENT     }
+CONTENT     else if (a.type == "rename") {
+CONTENT         string oldNew = a.extra;
+CONTENT         size_t sep = oldNew.find('|');
+CONTENT         string oldName = (sep==string::npos? oldNew : oldNew.substr(0, sep));
+CONTENT         string newName = (sep==string::npos? string() : oldNew.substr(sep+1));
+CONTENT         if (a.node) {
+CONTENT             a.node->name = newName;
+CONTENT             undoStack.push(Action("rename", a.node, a.parent, a.index, oldName + "|" + newName));
+CONTENT             center("🔁 Redo: renamed to " + newName);
+CONTENT         } else center("⚠ Redo rename: node missing");
+CONTENT     }
+CONTENT     else {
+CONTENT         center("⚠ Unsupported redo action");
+CONTENT     }
+CONTENT }
+CONTENT 
+CONTENT //-----------------------------------------------------------Complete File handling------------------------------------------------
+CONTENT 
+CONTENT // ------------------>>>>>>>>save and load history
+CONTENT void saveHistoryToFile() {
+CONTENT     std::ofstream out("history.txt", std::ios::trunc);
+CONTENT     for (size_t i = 0; i < commandHistory.size(); ++i) out << commandHistory[i] << "\n";
+CONTENT     out.close();
+CONTENT }
+CONTENT void loadHistoryFromFile() {
+CONTENT     commandHistory.clear();
+CONTENT     std::ifstream in("history.txt");
+CONTENT     if (!in) return;
+CONTENT     string line;
+CONTENT     while (std::getline(in, line)) {
+CONTENT         if (!line.empty()) commandHistory.push_back(line);
+CONTENT     }
+CONTENT     in.close();
+CONTENT }
+CONTENT 
+CONTENT // ------------------------------->>>>>save bookmarks
+CONTENT void saveBookmarks(std::ofstream &out) {
+CONTENT     out << "BOOKMARKS\n";
+CONTENT     Bookmark* b = bookmarksHead;
+CONTENT     while (b) {
+CONTENT         if (b->node) {
+CONTENT             out << "BOOKMARK " << b->name << " | " << joinPath(b->node) << "\n";
+CONTENT         }
+CONTENT         b = b->next;
+CONTENT     }
+CONTENT }
+CONTENT 
+CONTENT // ------------------------------>>>>>>>>>> save / load workspace 
+CONTENT void saveWorkspace(Node* node, std::ofstream &out, int depth = 0) {
+CONTENT     if (!node) return;
+CONTENT     out << depth << " " << (node->isFolder ? "D" : "F") << " " << (node->isLocked ? "1" : "0") << " " << node->name << "\n";
+CONTENT     if (!node->isFolder) {
+CONTENT         std::istringstream ss(node->fileContent);
+CONTENT         string line;
+CONTENT         while (std::getline(ss, line)) out << "CONTENT " << line << "\n";
+CONTENT     }
+CONTENT     for (Node* child : node->children) saveWorkspace(child, out, depth + 1);
+CONTENT }
+CONTENT 
+CONTENT //------------------------------>>>>>>>>> Load workspace + bookmarks
+CONTENT void loadWorkspace(Node* root, std::ifstream &in) {
+CONTENT     root->children.clear();
+CONTENT     currentNode = root;
+CONTENT     while (bookmarksHead) {
+CONTENT 	 Bookmark* t = bookmarksHead;
+CONTENT 	  bookmarksHead = bookmarksHead->next;
+CONTENT 	  delete t; 
+CONTENT 	  }
+CONTENT 
+CONTENT     vector<Node*> depthNodes;
+CONTENT     depthNodes.resize(1);
+CONTENT     depthNodes[0] = root;
+CONTENT 
+CONTENT     string line;
+CONTENT     Node* lastFileNode = NULL;
+CONTENT     bool inBookmarkSection = false;
+CONTENT     while (std::getline(in, line)) {
+CONTENT         if (line.empty()) continue;
+CONTENT         if (!inBookmarkSection && line == "BOOKMARKS") {
+CONTENT 		 inBookmarkSection = true; 
+CONTENT 		 continue;
+CONTENT 		  }
+CONTENT         if (inBookmarkSection) {
+CONTENT             if (line.rfind("BOOKMARK ", 0) == 0) {
+CONTENT                 string rest = line.substr(9);
+CONTENT                 size_t sep = rest.find(" | ");
+CONTENT                 string bname, bpath;
+CONTENT                 if (sep != string::npos) { 
+CONTENT 				bname = rest.substr(0, sep);
+CONTENT 				 bpath = rest.substr(sep + 3);
+CONTENT 				  }
+CONTENT                 else {
+CONTENT                     size_t sp = rest.find(' ');
+CONTENT                     if (sp != string::npos) {
+CONTENT 					 bname = rest.substr(0, sp); 
+CONTENT 					 bpath = rest.substr(sp + 1);
+CONTENT 					  }
+CONTENT                     else { 
+CONTENT 					bname = rest; 
+CONTENT 					bpath = "";
+CONTENT 					 }
+CONTENT                 }
+CONTENT                 if (!bpath.empty()) {
+CONTENT                     Node* target = findNodeByPath(bpath);
+CONTENT                     if (target) { 
+CONTENT 					Bookmark* nb = new Bookmark(bname, target); 
+CONTENT 					nb->next = bookmarksHead; bookmarksHead = nb; 
+CONTENT 					target->isBookmarked = true; 
+CONTENT 					}
+CONTENT                 }
+CONTENT             }
+CONTENT             continue;
+CONTENT         }
+CONTENT         if (line.rfind("CONTENT ", 0) == 0) {
+CONTENT             if (lastFileNode) lastFileNode->fileContent += line.substr(8) + "\n";
+CONTENT             continue;
+CONTENT         }
+CONTENT         stringstream ss(line);
+CONTENT         int depth;
+CONTENT         char type;
+CONTENT         int lockState;
+CONTENT         if (!(ss >> depth >> type >> lockState)) continue;
+CONTENT         string name;
+CONTENT         getline(ss, name);
+CONTENT         if (!name.empty() && name[0] == ' ') name = name.substr(1);
+CONTENT         if (depth == 0) { 
+CONTENT 		root->name = name;
+CONTENT 		root->isFolder = (type == 'D'); 
+CONTENT 		root->isLocked = (lockState == 1); 
+CONTENT 		lastFileNode = NULL;
+CONTENT 		continue; 
+CONTENT 		  }
+CONTENT         if ((int)depth >= (int)depthNodes.size()) depthNodes.resize(depth + 1, NULL);
+CONTENT         Node* parent = depthNodes[depth - 1];
+CONTENT         if (!parent) { 
+CONTENT 		lastFileNode = NULL; 
+CONTENT 		continue; 
+CONTENT 		}
+CONTENT         Node* newNode = new Node(name, (type == 'D'), parent);
+CONTENT         newNode->isLocked = (lockState == 1);
+CONTENT         parent->children.push_back(newNode);
+CONTENT         depthNodes[depth] = newNode;
+CONTENT         lastFileNode = (newNode->isFolder ? NULL : newNode);
+CONTENT     }
+CONTENT }
+CONTENT 
+CONTENT 
+CONTENT //-------------------------------------------------------->>>>>>>>>     Main part of Project      -------------------------------------------
+CONTENT int main() {
+CONTENT 	SetConsoleOutputCP(CP_UTF8); 
+CONTENT     system("chcp 65001 > nul"); 
+CONTENT     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+CONTENT     DWORD dwMode = 0;
+CONTENT     GetConsoleMode(hConsole, &dwMode);
+CONTENT     dwMode |= 0x0004; 
+CONTENT     SetConsoleMode(hConsole, dwMode);
+CONTENT     CONSOLE_SCREEN_BUFFER_INFO csbi;
+CONTENT     GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+CONTENT 
+CONTENT     int screenWidth = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+CONTENT     int boxWidth = 50;
+CONTENT     int padding = (screenWidth - boxWidth) / 2;
+CONTENT 
+CONTENT     auto center = [&](string text){
+CONTENT     cout << string(padding, ' ') << text;
+CONTENT };
+CONTENT 
+CONTENT     initCommandTrie(); 
+CONTENT      
+CONTENT     
+CONTENT     displayUIHeader();
+CONTENT 
+CONTENT      
+CONTENT     std::ifstream in("workspace.txt");
+CONTENT      
+CONTENT     loadHistoryFromFile();
+CONTENT     if (in) {
+CONTENT         loadWorkspace(ROOT, in);
+CONTENT         in.close();
+CONTENT         cout << "\033[93m";
+CONTENT         center("╔══════════════════════════════════════════════════╗\n");
+CONTENT         center("║ \033[97m📂 Auto-loaded workspace from workspace.txt      \033[93m║\n");
+CONTENT         center("╚══════════════════════════════════════════════════╝\n");
+CONTENT         cout << "\033[0m";
+CONTENT     }
+CONTENT 
+CONTENT     cout << "\033[92m";
+CONTENT     center("💡 Tip: Type \033[93mhelp\033[92m to view available commands\n");
+CONTENT     cout << "\033[0m";
+CONTENT 
+CONTENT 
+CONTENT     showPrompt();
+CONTENT     
+CONTENT     while (true) {
+CONTENT 
+CONTENT         char ch = _getch();
+CONTENT         
+CONTENT         if (ch == 13) {
+CONTENT             cout << endl;
+CONTENT             if (!inputBuffer.empty()) {
+CONTENT                 commandHistory.push_back(inputBuffer);
+CONTENT                 saveHistoryToFile();
+CONTENT             }
+CONTENT 
+CONTENT             string cmd, rest;
+CONTENT             parseCommandLine(inputBuffer, cmd, rest);
+CONTENT             inputBuffer.clear();
+CONTENT 
+CONTENT             if (cmd == "exit") {
+CONTENT                 std::ofstream out("workspace.txt");
+CONTENT                 if (out) {
+CONTENT                     saveWorkspace(ROOT, out, 0);
+CONTENT                     saveBookmarks(out);
+CONTENT                     out.close();
+CONTENT                 }
+CONTENT                 saveHistoryToFile();
+CONTENT                 cout << "\033[93m";
+CONTENT                 center("╔══════════════════════════════════════════════════╗\n");
+CONTENT                 center("║ \033[97m            📁 Auto-saved workspace              \033[93m║\n");
+CONTENT                 center("╚══════════════════════════════════════════════════╝\n");
+CONTENT                 cout << "\033[0m";
+CONTENT                 break;
+CONTENT             }
+CONTENT 
+CONTENT             else if (cmd == "help"){
+CONTENT             	cout << "\033[93m";
+CONTENT                 center("╔══════════════════════════════════════════════════╗\n");
+CONTENT                 center("║ \033[97m             📘 HELP MENU 📘                     \033[93m║\n");
+CONTENT                 center("╠══════════════════════════════════════════════════╣\n");
+CONTENT                 center("║ \033[97m📁 ls                       → list items         \033[93m║\n");
+CONTENT                 center("║ \033[97m📂 mkdir <name>             → create folder      \033[93m║\n");
+CONTENT                 center("║ \033[97m❌ rm <name>                → remove item        \033[93m║\n");
+CONTENT                 center("║ \033[97m📄 touch <file>             → create file        \033[93m║\n");
+CONTENT                 center("║ \033[97m👀 view <file>              → view file          \033[93m║\n");
+CONTENT                 center("║ \033[97m📝 edit <file>              → edit file          \033[93m║\n");
+CONTENT                 center("║ \033[97m✏ rename <old> <new>        → rename item        \033[93m║\n");
+CONTENT                 center("║ \033[97m🔁 cd <name|..>             → change folder      \033[93m║\n");
+CONTENT                 center("║ \033[97m🌳 tree                     → directory tree     \033[93m║\n");
+CONTENT                 center("║ \033[97m🌳 infixtree <file.txt>     → infixtree    \033[93m      ║\n");
+CONTENT                 center("║ \033[97m🌳 prefixtree <file.txt>    → prefixtree         \033[93m║\n");
+CONTENT                 center("║ \033[97m🌳 postfixtree <file.txt>   →  postfixtree       \033[93m║\n");
+CONTENT                 center("║ \033[97m↩ undo / redo               → undo redo          \033[93m║\n");
+CONTENT                 center("║ \033[97m🔍 search <k> [dfs|bfs]     → search item        \033[93m║\n");
+CONTENT                 center("║ \033[97m🔖 bookmark add <name>      → add bookmark       \033[93m║\n");
+CONTENT                 center("║ \033[97m📌 bookmark list            → list bookmarks     \033[93m║\n");
+CONTENT                 center("║ \033[97m🚀 bookmark go <name>       → go bookmark        \033[93m║\n");
+CONTENT                 center("║ \033[97m🗑 bookmark remove <name>    → del bookmark       \033[93m║\n");
+CONTENT                 center("║ \033[97m🕘 history                  → cmd history        \033[93m║\n");
+CONTENT                 center("║ \033[97m🧹 clearhistory             → clear history      \033[93m║\n");
+CONTENT                 center("║ \033[97m🔒 lock <item>              → lock file/folder   \033[93m║\n");
+CONTENT                 center("║ \033[97m🔓 unlock <item>            → unlock item        \033[93m║\n");
+CONTENT                 center("║ \033[97m🧼 clear                    → refresh UI         \033[93m║\n");
+CONTENT                 center("║ \033[97m❎ exit                     → quit explorer      \033[93m║\n");
+CONTENT                 center("╚══════════════════════════════════════════════════╝\n");
+CONTENT                 cout << "\033[0m";
+CONTENT 			}
+CONTENT             else if (cmd == "postfixtree") cmd_postfix_tree(rest);
+CONTENT             else if (cmd == "prefixtree")  cmd_prefix_tree(rest);
+CONTENT             else if (cmd == "infixtree")   cmd_infix_tree(rest);
+CONTENT             else if (cmd == "ls") cmd_ls();
+CONTENT             else if (cmd == "mkdir") cmd_mkdir(rest);
+CONTENT             else if (cmd == "rm") cmd_rm(rest);
+CONTENT             else if (cmd == "cd") cmd_cd(rest);
+CONTENT             else if (cmd == "tree") cmd_tree();
+CONTENT             else if (cmd == "undo") cmd_undo();
+CONTENT             else if (cmd == "redo") cmd_redo();
+CONTENT             else if (cmd == "rename") cmd_rename(rest);
+CONTENT             else if (cmd == "search") cmd_search(rest);
+CONTENT             else if (cmd == "touch") cmd_touch(rest);
+CONTENT             else if (cmd == "view") cmd_view(rest);
+CONTENT             else if (cmd == "edit") cmd_edit(rest);
+CONTENT             else if (cmd == "lock") {
+CONTENT                 if (rest.empty())
+CONTENT                    center("\033[93m⚠️ Usage: lock <name>\033[0m");
+CONTENT                 else
+CONTENT                    lockItem(currentNode, rest);
+CONTENT             }
+CONTENT             else if (cmd == "unlock") {
+CONTENT                 if (rest.empty())
+CONTENT                    center("\033[93m⚠️ Usage: unlock <name>\033[0m");
+CONTENT                 else
+CONTENT                    unlockItem(currentNode, rest);
+CONTENT             }
+CONTENT             else if (cmd == "bookmark") {
+CONTENT                 string sub, arg;
+CONTENT                 parseCommandLine(rest, sub, arg);
+CONTENT                 if (sub == "add") bookmark_add(arg);
+CONTENT                 else if (sub == "list") bookmark_list();
+CONTENT                 else if (sub == "go") bookmark_go(arg);
+CONTENT                 else if (sub == "remove") bookmark_remove(arg);
+CONTENT                 else center("❌ Unknown bookmark command: " + sub);
+CONTENT             }
+CONTENT             else if (cmd == "history") cmd_history();
+CONTENT             else if (cmd == "clearhistory") clearCommandHistory();
+CONTENT 
+CONTENT             else if (cmd == "clear") {
+CONTENT                 clearConsoleSim();
+CONTENT                 displayUIHeader();
+CONTENT                 
+CONTENT         cout << "\033[0m";
+CONTENT                 cout << "\033[92m";
+CONTENT                 center("      💡 Tip: Type \033[93mhelp\033[92m to view available commands\n");
+CONTENT                 cout << "\033[0m";
+CONTENT             } 
+CONTENT 			else {
+CONTENT                 center("         \033[91m❌ Unknown Command: " + cmd + "\033[0m\n");
+CONTENT             }
+CONTENT 
+CONTENT             showPrompt();
+CONTENT             continue;
+CONTENT        }
+CONTENT        
+CONTENT         else if (ch == '\t') {
+CONTENT             vector<string> suggestions;
+CONTENT             string lowerBuf = toLowerCopy(inputBuffer);
+CONTENT             suggestions = trieSuggest(lowerBuf, 1);
+CONTENT             if (!suggestions.empty())
+CONTENT                 inputBuffer = suggestions[0];
+CONTENT         }
+CONTENT 
+CONTENT         else if (ch == 8) {
+CONTENT             if (!inputBuffer.empty())
+CONTENT                 inputBuffer.pop_back();
+CONTENT         }
+CONTENT 
+CONTENT         else if (isprint(ch)) {
+CONTENT             inputBuffer.push_back(ch);
+CONTENT         }
+CONTENT 
+CONTENT         cout << "\r"; 
+CONTENT         showPrompt();
+CONTENT         cout << inputBuffer;
+CONTENT 
+CONTENT         cout << "\033[J"; 
+CONTENT         cout.flush();
+CONTENT 
+CONTENT     }
+CONTENT displayUIfoter();
+CONTENT     return 0;
+CONTENT }
+1 D 0 nimra
+BOOKMARKS
+BOOKMARK sem-3 | /ROOT/Uni/sem-3
+BOOKMARK subj-detail.txt | /ROOT/Uni/sem-3/subj-detail.txt
+BOOKMARK subj-detail.txt | /ROOT/Uni/sem-3/subj-detail.txt

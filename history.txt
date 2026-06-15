@@ -1,0 +1,139 @@
+exit
+history
+exit
+help
+touch
+tree
+cd Uni
+cd sem-3
+bookmark add subj-detail.txt
+tree
+cd /
+bookmark go subj-detail.txt
+clear
+help
+tree
+cd Uni
+cd ..
+mkdir
+mkdir GP_members
+cd GP_members
+mkdir detail_view
+cd detail_view
+tree
+cd GP-members
+cd GP_members
+cd /
+ cd GP-members
+cd GP_members
+cd detail_vire
+cd detail_view
+cd project
+touch source_code.txt
+edit source_code.txt
+view source_cpde.txt
+view source_code.txt
+exit
+help
+bookmark list
+bookmark go sem-3
+cd ..
+cd ..
+lock sem
+lock sem-3
+unlock sem-3
+help
+tree
+cd GP_members
+cd detail_view
+view source_code.txt
+help
+tree
+mkdir nimra
+tree
+cd nimra
+exit
+help
+ls
+tree
+exit
+exit
+help
+ls
+mkdir dcn
+bookmark list
+search dcn bfs
+tree
+infixtree infix.txt
+cd GP_members
+ls
+view
+help
+ls
+cd uni
+cd Uni
+ls
+cd sem-3
+ls
+view subj-detail.txt
+cd ..
+cd ..
+cd /
+cd Uni
+rm Uni
+cd ..
+rm Uni
+undo
+cd Uni
+ls
+exit
+help
+exit
+help
+tree
+bookmark sem-3
+cd uni
+cd Uni
+bookamrk add sem-3
+bookmark add sem-3
+cd /
+view sem-3
+bookmark go sem-3
+cd /
+history
+exit
+HELP
+help
+ls
+tree
+mkdir uni1
+tree
+rm uni1
+tree
+cd Uni
+touch sub1
+cd ..
+cd Uni
+cd sem-3
+view subj-detail.txt
+edit subj-detail.txt
+cd /
+infixtree infix.txt
+cd Uni
+rm sem-3
+undo
+bookmark list
+bookmark go subj-detail.txt
+cd /
+history
+clear
+help
+exit
+tree
+cd GP_members
+cd detail_view
+edit source_code
+edit source_code.txt
+view source_code
+view source_code.txt
+exit
